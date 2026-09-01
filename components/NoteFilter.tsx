@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
+import CommentBox from "./CommentBox";
 import type { Note } from "../data/types";
 
 function Highlight({ text, query }: { text: string; query: string }) {
@@ -122,6 +123,7 @@ export default function NoteFilter({ notes }: { notes: Note[] }) {
                   style={{ background: "linear-gradient(90deg,var(--border-strong),transparent)" }} />
 
                 <MarkdownContent content={note.content.replace(/^##\s+[^\n]+\n?/, "")} highlight={query} />
+                <CommentBox slug={note.slug} />
               </div>
             );
           })
