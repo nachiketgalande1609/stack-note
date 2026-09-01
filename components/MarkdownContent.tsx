@@ -125,23 +125,33 @@ export default function MarkdownContent({ content, highlight = "" }: { content: 
         i++;
       }
       const rows = tableLines.filter((l) => !l.match(/^\|[-| ]+\|$/));
+      const headerRow = rows[0];
+      const bodyRows  = rows.slice(1);
       elements.push(
         <div key={key++} className="overflow-x-auto my-5 rounded-lg border" style={{ borderColor: "var(--border)" }}>
           <table className="w-full text-sm border-collapse">
-            {rows.map((row, ri) => {
-              const cells = row.split("|").filter(Boolean).map((c) => c.trim());
-              const Tag = ri === 0 ? "th" : "td";
-              return (
-                <tr key={ri} style={{ borderBottom: `1px solid var(--border)`, background: ri === 0 ? "var(--bg-surface-2)" : "transparent" }}>
-                  {cells.map((cell, ci) => (
-                    <Tag key={ci} className={`px-4 py-2.5 text-left ${ri === 0 ? "sn-prose-heading" : "sn-prose-body"}`}
-                      style={{ fontWeight: ri === 0 ? 600 : 400, fontSize: "0.875rem" }}>
-                      {inline(cell)}
-                    </Tag>
+            <thead>
+              <tr style={{ borderBottom: `1px solid var(--border)`, background: "var(--bg-surface-2)" }}>
+                {headerRow.split("|").filter(Boolean).map((cell, ci) => (
+                  <th key={ci} className="px-4 py-2.5 text-left sn-prose-heading"
+                    style={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                    {inline(cell.trim())}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {bodyRows.map((row, ri) => (
+                <tr key={ri} style={{ borderBottom: `1px solid var(--border)` }}>
+                  {row.split("|").filter(Boolean).map((cell, ci) => (
+                    <td key={ci} className="px-4 py-2.5 text-left sn-prose-body"
+                      style={{ fontWeight: 400, fontSize: "0.875rem" }}>
+                      {inline(cell.trim())}
+                    </td>
                   ))}
                 </tr>
-              );
-            })}
+              ))}
+            </tbody>
           </table>
         </div>
       );
