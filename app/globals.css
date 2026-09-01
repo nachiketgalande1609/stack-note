@@ -1,26 +1,120 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap");
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ─────────────────────────────────────
+   DARK  (default) — pure achromatic
+   Green used ONLY as accent
+───────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --bg-base:        #060606;
+  --bg-surface:     #0D0D0D;
+  --bg-surface-2:   #141414;
+  --sidebar-bg:     #080808;
+  --nav-bg:         rgba(6, 6, 6, 0.93);
+  --border:         rgba(255, 255, 255, 0.07);
+  --border-strong:  rgba(255, 255, 255, 0.13);
+  --text-primary:   #F0F0F0;
+  --text-secondary: #666666;
+  --text-muted:     #444444;
+  --accent-1:       #00FF41;   /* Matrix green — use sparingly */
+  --accent-2:       #00CC33;
+  --code-bg:        #040404;
+  --code-bar:       #0A0A0A;
+  --shadow:         rgba(0, 0, 0, 0.6);
+  --glow:           0 0 24px rgba(0, 255, 65, 0.08);
+  --glow-strong:    0 0 40px rgba(0, 255, 65, 0.14);
+  --hover-border:   rgba(0, 255, 65, 0.22);
+  --accent-icon-text: #000000;  /* black on bright #00FF41 */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* ─────────────────────────────────────
+   LIGHT — pure achromatic
+───────────────────────────────────── */
+[data-theme="light"] {
+  --bg-base:        #F7F7F7;
+  --bg-surface:     #FFFFFF;
+  --bg-surface-2:   #F0F0F0;
+  --sidebar-bg:     #F2F2F2;
+  --nav-bg:         rgba(247, 247, 247, 0.95);
+  --border:         rgba(0, 0, 0, 0.08);
+  --border-strong:  rgba(0, 0, 0, 0.16);
+  --text-primary:   #111111;
+  --text-secondary: #777777;
+  --text-muted:     #AAAAAA;
+  --accent-1:       #00A030;   /* Vivid green — stands out on white */
+  --accent-2:       #008A28;
+  --code-bg:        #111111;
+  --code-bar:       #1A1A1A;
+  --shadow:         rgba(0, 0, 0, 0.08);
+  --glow:           0 2px 16px rgba(0, 0, 0, 0.06);
+  --glow-strong:    0 4px 24px rgba(0, 0, 0, 0.10);
+  --hover-border:   rgba(0, 160, 48, 0.30);
+  --accent-icon-text: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ─── Reset & Base ─── */
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  margin: 0;
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  transition: background 200ms ease, color 200ms ease;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Space Grotesk", sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* ─── Scrollbars ─── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar { width: 4px; height: 4px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+
+::selection { background: var(--accent-1); color: #000; }
+
+/* ─── Prose text — always contrast-safe regardless of theme ─── */
+.sn-prose-body   { color: var(--text-primary); }
+.sn-prose-heading { color: var(--text-primary); }
+
+/* Bold inside prose: green accent */
+.sn-bold { color: var(--accent-2); }
+
+/* Inline code inside prose */
+.sn-inline-code {
+  background: color-mix(in srgb, var(--accent-1) 10%, transparent);
+  color: var(--accent-1);
+}
+
+/* ─── Card hover states ─── */
+.note-card {
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+.note-card:hover {
+  border-color: var(--hover-border) !important;
+  transform: translateY(-1px);
+  box-shadow: var(--glow);
+}
+
+.category-card {
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+.category-card:hover {
+  border-color: var(--hover-border) !important;
+  transform: translateY(-2px);
+  box-shadow: var(--glow-strong);
 }
