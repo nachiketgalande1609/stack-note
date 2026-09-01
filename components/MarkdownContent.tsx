@@ -1,10 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Check, Copy } from "lucide-react";
+import { createHighlighter, type Highlighter } from "shiki";
 
+// ── Singleton Shiki highlighter ──────────────────────────────────────────────
+let _hl: Promise<Highlighter> | null = null;
+
+function getHighlighter(): Promise<Highlighter> {
+  if (!_hl) {
+    _hl = createHighlighter({
+      themes: ["tokyo-night"],
+      langs: [
+        "javascript", "typescript", "jsx", "tsx",
+        "python", "sql", "bash", "sh",
+        "json", "html", "css", "text",
+      ],
+    });
+  }
+  return _hl;
+}
+
+// ── CodeBlock ────────────────────────────────────────────────────────────────
 function CodeBlock({ code, lang }: { code: string; lang?: string }) {
   const [copied, setCopied] = useState(false);
+  const [html, setHtml] = useState<string>("");
 
   const copy = () => {
     navigator.clipboard.writeText(code);
@@ -12,11 +32,31 @@ function CodeBlock({ code, lang }: { code: string; lang?: string }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    getHighlighter().then((hl) => {
+      if (cancelled) return;
+      const safeLang = hl.getLoadedLanguages().includes(lang as never) ? lang! : "text";
+      try {
+        const highlighted = hl.codeToHtml(code, { lang: safeLang, theme: "tokyo-night" });
+        setHtml(highlighted);
+      } catch {
+        // leave html empty → fallback to plain rendering
+      }
+    });
+    return () => { cancelled = true; };
+  }, [code, lang]);
+
   return (
-    <div className="relative rounded-lg my-5 overflow-hidden"
-      style={{ background: "var(--code-bg)", border: "1px solid var(--border)" }}>
-      <div className="flex items-center justify-between px-4 py-2 border-b text-xs font-mono"
-        style={{ background: "var(--code-bar)", borderColor: "var(--border)", color: "var(--text-secondary)" }}>
+    <div
+      className="relative rounded-lg my-5 overflow-hidden"
+      style={{ background: "var(--code-bg)", border: "1px solid var(--border)" }}
+    >
+      {/* Header bar */}
+      <div
+        className="flex items-center justify-between px-4 py-2 border-b text-xs font-mono"
+        style={{ background: "var(--code-bar)", borderColor: "var(--border)", color: "var(--text-secondary)" }}
+      >
         <span>{lang ?? "code"}</span>
         <button
           onClick={copy}
@@ -27,14 +67,23 @@ function CodeBlock({ code, lang }: { code: string; lang?: string }) {
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="p-4 overflow-x-auto text-sm leading-relaxed"
-        style={{ color: "#a8d8a8", fontFamily: "'JetBrains Mono', monospace", margin: 0 }}>
-        <code>{code}</code>
-      </pre>
+
+      {/* Code area */}
+      {html ? (
+        <div className="sn-shiki" dangerouslySetInnerHTML={{ __html: html }} />
+      ) : (
+        <pre
+          className="p-4 overflow-x-auto text-sm leading-relaxed"
+          style={{ color: "#a8d8a8", fontFamily: "'JetBrains Mono', monospace", margin: 0 }}
+        >
+          <code>{code}</code>
+        </pre>
+      )}
     </div>
   );
 }
 
+// ── Inline text helpers ───────────────────────────────────────────────────────
 function highlightText(text: string, query: string): React.ReactNode {
   if (!query.trim()) return text;
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
@@ -52,6 +101,7 @@ function highlightText(text: string, query: string): React.ReactNode {
   );
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
 export default function MarkdownContent({ content, highlight = "" }: { content: string; highlight?: string }) {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
@@ -86,7 +136,7 @@ export default function MarkdownContent({ content, highlight = "" }: { content: 
     const line = lines[i];
 
     if (line.startsWith("```")) {
-      const lang = line.slice(3).trim();
+      const lang = line.slice(3).trim() || undefined;
       const codeLines: string[] = [];
       i++;
       while (i < lines.length && !lines[i].startsWith("```")) {

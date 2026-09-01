@@ -100,6 +100,18 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--accent-1);
 }
 
+/* ─── Shiki syntax highlighting ─── */
+.sn-shiki .shiki {
+  background: transparent !important;
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  font-family: 'JetBrains Mono', monospace;
+}
+.sn-shiki .shiki code { font-family: inherit; }
+
 /* ─── Card hover states ─── */
 .note-card {
   transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
