@@ -1,6 +1,7 @@
 export interface Category {
   slug: string;
   label: string;
+  fullName?: string;
   description: string;
   icon: string;
   color: string;
@@ -10,6 +11,7 @@ export const categories: Category[] = [
   {
     slug: "ai",
     label: "AI",
+    fullName: "Artificial Intelligence",
     description: "Machine learning, LLMs, agents, RAG, and the full AI developer stack",
     icon: "Cpu",
     color: "blue",

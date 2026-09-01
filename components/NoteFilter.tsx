@@ -1,12 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
 import type { Note } from "../data/types";
 
+function Highlight({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} style={{ background: "color-mix(in srgb, var(--accent-1) 25%, transparent)", color: "inherit", borderRadius: 2 }}>
+            {part}
+          </mark>
+        ) : part
+      )}
+    </>
+  );
+}
+
 export default function NoteFilter({ notes }: { notes: Note[] }) {
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    function onSidebarNav(e: Event) {
+      const slug = (e as CustomEvent<string>).detail;
+      setQuery("");
+      setTimeout(() => {
+        document.getElementById(slug)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+    }
+    window.addEventListener("sidebar-nav", onSidebarNav);
+    return () => window.removeEventListener("sidebar-nav", onSidebarNav);
+  }, []);
 
   const filtered = query.trim()
     ? notes.filter((n) => {
@@ -81,18 +110,18 @@ export default function NoteFilter({ notes }: { notes: Note[] }) {
                     className="text-xl font-bold leading-tight"
                     style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}
                   >
-                    {note.title}
+                    <Highlight text={note.title} query={query} />
                   </h2>
                 </div>
 
                 <p className="text-sm leading-relaxed mb-7" style={{ color: "var(--text-secondary)" }}>
-                  {note.description}
+                  <Highlight text={note.description} query={query} />
                 </p>
 
                 <div className="h-px mb-7"
                   style={{ background: "linear-gradient(90deg,var(--border-strong),transparent)" }} />
 
-                <MarkdownContent content={note.content.replace(/^##\s+[^\n]+\n?/, "")} />
+                <MarkdownContent content={note.content.replace(/^##\s+[^\n]+\n?/, "")} highlight={query} />
               </div>
             );
           })

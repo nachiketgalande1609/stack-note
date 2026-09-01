@@ -68,7 +68,7 @@ export default function Sidebar({ category, isOpen, onClose }: SidebarProps) {
                 <li key={note.slug}>
                   <Link
                     href={href}
-                    onClick={onClose}
+                    onClick={() => { onClose(); window.dispatchEvent(new CustomEvent("sidebar-nav", { detail: note.slug })); }}
                     className="flex items-start gap-2.5 px-3 py-2 rounded-md text-sm transition-colors hover:opacity-80"
                     style={{
                       color: "var(--text-secondary)",

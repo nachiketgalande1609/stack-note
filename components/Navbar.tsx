@@ -156,12 +156,6 @@ export default function Navbar({ onMenuClick, showMenuBtn, chatOpen, onChatToggl
         >
           <Search size={12} />
           <span className="hidden md:inline text-xs">Search…</span>
-          <kbd
-            className="ml-1 px-1.5 py-0.5 rounded text-xs font-mono"
-            style={{ background: "var(--bg-surface-2)", color: "var(--accent-1)", border: "1px solid var(--border)" }}
-          >
-            ⌘K
-          </kbd>
         </button>
 
         <button

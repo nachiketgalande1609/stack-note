@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { Search, X, ArrowRight } from "lucide-react";
 import { allNotes } from "../data";
 import { categories } from "../data/categories";
@@ -14,11 +13,29 @@ interface Props {
 const catLabel = (slug: string) =>
   categories.find((c) => c.slug === slug)?.label ?? slug;
 
+function Highlight({ text, query }: { text: string; query: string }) {
+  if (!query.trim()) return <>{text}</>;
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} style={{ background: "color-mix(in srgb, var(--accent-1) 25%, transparent)", color: "inherit", borderRadius: 2 }}>
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
+
 export default function SearchModal({ isOpen, onClose }: Props) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
 
   const results = query.trim()
     ? allNotes.filter((n) => {
@@ -44,9 +61,10 @@ export default function SearchModal({ isOpen, onClose }: Props) {
   }, [query]);
 
   const navigate = useCallback((note: { category: string; slug: string }) => {
-    router.push(`/notes/${note.category}#${note.slug}`);
     onClose();
-  }, [router, onClose]);
+    // Use location.href so the hash anchor scroll fires reliably
+    window.location.href = `/notes/${note.category}#${note.slug}`;
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -111,10 +129,10 @@ export default function SearchModal({ isOpen, onClose }: Props) {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
-                      {note.title}
+                      <Highlight text={note.title} query={query} />
                     </p>
                     <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-secondary)" }}>
-                      {note.description}
+                      <Highlight text={note.description} query={query} />
                     </p>
                   </div>
                   <span className="text-xs px-1.5 py-0.5 rounded font-mono flex-shrink-0"

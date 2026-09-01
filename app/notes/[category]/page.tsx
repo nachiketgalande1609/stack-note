@@ -36,11 +36,8 @@ export default async function CategoryPage({ params }: Props) {
         </Link>
         <h1 className="text-4xl font-bold mb-2"
           style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
-          {cat.label}
+          {cat.fullName ?? cat.label}
         </h1>
-        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-          scroll to read all
-        </p>
       </div>
 
       <NoteFilter notes={notes} />

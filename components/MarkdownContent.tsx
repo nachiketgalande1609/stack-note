@@ -35,7 +35,24 @@ function CodeBlock({ code, lang }: { code: string; lang?: string }) {
   );
 }
 
-export default function MarkdownContent({ content }: { content: string }) {
+function highlightText(text: string, query: string): React.ReactNode {
+  if (!query.trim()) return text;
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi");
+  const parts = text.split(regex);
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} style={{ background: "color-mix(in srgb, var(--accent-1) 25%, transparent)", color: "inherit", borderRadius: 2 }}>
+            {part}
+          </mark>
+        ) : part
+      )}
+    </>
+  );
+}
+
+export default function MarkdownContent({ content, highlight = "" }: { content: string; highlight?: string }) {
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let i = 0;
@@ -47,7 +64,7 @@ export default function MarkdownContent({ content }: { content: string }) {
       if (part.startsWith("**") && part.endsWith("**")) {
         return (
           <strong key={pi} className="sn-bold" style={{ fontWeight: 600 }}>
-            {part.slice(2, -2)}
+            {highlightText(part.slice(2, -2), highlight)}
           </strong>
         );
       }
@@ -59,9 +76,9 @@ export default function MarkdownContent({ content }: { content: string }) {
         );
       }
       if (part.startsWith("*") && part.endsWith("*")) {
-        return <em key={pi} style={{ color: "var(--text-secondary)" }}>{part.slice(1, -1)}</em>;
+        return <em key={pi} style={{ color: "var(--text-secondary)" }}>{highlightText(part.slice(1, -1), highlight)}</em>;
       }
-      return part;
+      return highlightText(part, highlight);
     });
   }
 
