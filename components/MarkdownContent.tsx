@@ -136,7 +136,7 @@ export default function MarkdownContent({ content, highlight = "" }: { content: 
                   {cells.map((cell, ci) => (
                     <Tag key={ci} className={`px-4 py-2.5 text-left ${ri === 0 ? "sn-prose-heading" : "sn-prose-body"}`}
                       style={{ fontWeight: ri === 0 ? 600 : 400, fontSize: "0.875rem" }}>
-                      {cell}
+                      {inline(cell)}
                     </Tag>
                   ))}
                 </tr>
