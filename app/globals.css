@@ -2,10 +2,9 @@
 @import "tailwindcss";
 
 /* ─────────────────────────────────────
-   DARK  (default) — pure achromatic
+   DARK — pure achromatic
    Green used ONLY as accent
 ───────────────────────────────────── */
-:root,
 [data-theme="dark"] {
   --bg-base:        #060606;
   --bg-surface:     #0D0D0D;
@@ -29,8 +28,9 @@
 }
 
 /* ─────────────────────────────────────
-   LIGHT — pure achromatic
+   LIGHT (default) — pure achromatic
 ───────────────────────────────────── */
+:root,
 [data-theme="light"] {
   --bg-base:        #F7F7F7;
   --bg-surface:     #FFFFFF;
