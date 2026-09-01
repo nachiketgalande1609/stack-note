@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { Terminal, ChevronDown, Search, Sun, Moon, Cpu, Code2, FileCode, Layers, Database } from "lucide-react";
+import { Terminal, ChevronDown, Search, Sun, Moon, Cpu, Code2, FileCode, Layers, Database, MessageSquare } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { categories } from "../data/categories";
 
@@ -13,9 +13,12 @@ const iconMap: Record<string, React.ElementType> = {
 interface NavbarProps {
   onMenuClick?: () => void;
   showMenuBtn?: boolean;
+  chatOpen?: boolean;
+  onChatToggle?: () => void;
+  onSearchOpen?: () => void;
 }
 
-export default function Navbar({ onMenuClick, showMenuBtn }: NavbarProps) {
+export default function Navbar({ onMenuClick, showMenuBtn, chatOpen, onChatToggle, onSearchOpen }: NavbarProps) {
   const { theme, toggle } = useTheme();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
@@ -140,13 +143,16 @@ export default function Navbar({ onMenuClick, showMenuBtn }: NavbarProps) {
 
       {/* Right: search + theme toggle */}
       <div className="flex items-center gap-2">
-        <div
-          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm cursor-default"
+        <button
+          onClick={onSearchOpen}
+          className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition-colors"
           style={{
             background: "var(--bg-surface)",
             borderColor: "var(--border)",
             color: "var(--text-secondary)",
           }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-strong)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; }}
         >
           <Search size={12} />
           <span className="hidden md:inline text-xs">Search…</span>
@@ -156,7 +162,20 @@ export default function Navbar({ onMenuClick, showMenuBtn }: NavbarProps) {
           >
             ⌘K
           </kbd>
-        </div>
+        </button>
+
+        <button
+          onClick={onChatToggle}
+          className="w-8 h-8 flex items-center justify-center rounded-md border transition-colors"
+          style={{
+            background: chatOpen ? "var(--accent-1)" : "var(--bg-surface)",
+            borderColor: chatOpen ? "var(--accent-1)" : "var(--border)",
+          }}
+          aria-label="Toggle AI chat"
+          title="Ask AI"
+        >
+          <MessageSquare size={14} style={{ color: chatOpen ? "var(--accent-icon-text)" : "var(--accent-1)" }} />
+        </button>
 
         <button
           onClick={toggle}

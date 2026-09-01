@@ -438,6 +438,64 @@ Frameworks for running your eval suite on every release: prompt regression tests
 
 Knowing where each piece lives helps you make deliberate build-vs-buy decisions and diagnose failures at the right layer when things go wrong.`,
   },
+  {
+    slug: "mcp",
+    title: "Model Context Protocol (MCP)",
+    description: "A standard protocol for connecting LLMs to external tools, data sources, and services.",
+    category: "ai",
+    content: `## Model Context Protocol (MCP)
+
+Model Context Protocol (MCP) is an open standard introduced by Anthropic in 2024 that defines a consistent way for LLM applications to connect to external tools, data sources, and services. Think of it as a USB-C port for AI: instead of every application building its own custom integration for every tool, MCP gives both sides a single contract to implement once.
+
+### Why MCP exists
+
+Before MCP, every AI assistant that wanted to query a database, call an API, or read a file had to build a bespoke integration. This created an M×N problem — M different host applications each needing N separate connectors. MCP collapses that to M+N: each host implements the client protocol once, and each data source implements the server protocol once.
+
+### Architecture
+
+MCP is a client-server protocol that runs over a local or remote transport (typically stdio or HTTP with Server-Sent Events):
+
+- **Host** — the LLM application (Claude Desktop, an IDE extension, a custom agent) that initiates connections and controls the model.
+- **MCP Client** — lives inside the host; manages one connection per MCP server and passes tool calls and results between the model and the server.
+- **MCP Server** — a lightweight process that exposes capabilities: tools, resources, or prompts. A server can be a local script, a cloud function, or a long-running service.
+
+### Three primitive types
+
+MCP exposes three kinds of primitives:
+
+- **Tools** (model-controlled) — functions the model can call: search the web, run a query, send an email. Defined as JSON schemas; the model decides when to invoke them.
+- **Resources** (application-controlled) — static or dynamic content the host exposes to the model: files, database rows, API responses.
+- **Prompts** (user-controlled) — pre-written templates invoked by name to guide the model toward a specific workflow.
+
+### Tool definition example
+
+A tool definition is a JSON schema the server sends at connection time. The model reads it, generates a structured call when relevant, and the MCP client routes that call to the server — no custom parsing on your side.
+
+\`\`\`json
+{
+  "name": "search_docs",
+  "description": "Search the documentation for a given query.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "query": { "type": "string" }
+    },
+    "required": ["query"]
+  }
+}
+\`\`\`
+
+### Sampling and roots
+
+Two additional features round out the protocol:
+
+- **Sampling** — MCP servers can ask the host to run an LLM completion on their behalf, enabling recursive agent patterns where tools themselves can reason.
+- **Roots** — servers advertise filesystem or URL roots they care about, so the host can scope resource access without granting blanket permissions.
+
+### When to use MCP
+
+MCP pays off at the boundary between independently developed systems. Use it when you are building a tool that multiple AI applications should consume, or when your application wants to use tools that already exist as MCP servers (databases, GitHub, Slack, browser automation). For a one-off integration inside a single codebase, a direct function call is simpler.`,
+  },
 ];
 
 export default notes;

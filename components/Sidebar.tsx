@@ -61,12 +61,6 @@ export default function Sidebar({ category, isOpen, onClose }: SidebarProps) {
 
         {/* Notes */}
         <div className="flex-1 overflow-y-auto py-3 px-2">
-          <p
-            className="px-3 pb-2 text-xs font-mono uppercase tracking-widest"
-            style={{ color: "var(--text-secondary)" }}
-          >
-            {String(notes.length).padStart(2, "0")} notes
-          </p>
           <ul className="space-y-px">
             {notes.map((note, i) => {
               const href = `/notes/${category}#${note.slug}`;
