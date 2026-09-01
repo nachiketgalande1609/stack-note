@@ -4,43 +4,57 @@ const notes: Note[] = [
   {
     slug: "python-intro",
     title: "Python at a Glance",
-    description: "What Python is, how it runs, the REPL, and why it dominates so many domains.",
+    description: "What Python is, how it runs, the REPL, virtual environments, and why it dominates so many domains.",
     category: "python",
     content: `## Python at a Glance
 
-Python is a high-level, dynamically typed, interpreted language designed for readability. Its philosophy — "there should be one obvious way to do it" — keeps code clean and predictable.
+Python is a **high-level, dynamically typed, interpreted** language built around a single guiding principle: code should be easy to read and write. Rather than fighting the language, you spend your energy solving the actual problem.
 
-### Where Python runs
+### How Python executes your code
+
+Unlike C or Java, Python does not compile to machine code ahead of time. Instead:
+
+- You write \`.py\` source files
+- The **CPython interpreter** parses and compiles them to **bytecode** (\`.pyc\` files) on the fly
+- The **Python Virtual Machine (PVM)** executes that bytecode line by line
 
 \`\`\`
-Source (.py) → CPython interpreter → Bytecode (.pyc) → PVM execution
+your_script.py  →  CPython compiler  →  bytecode (.pyc)  →  PVM runs it
 \`\`\`
 
-No compile step is required. Run a file with \`python script.py\` or experiment in the REPL:
+This means there is no separate compile step. Just run \`python3 script.py\` and it works.
+
+### The REPL
+
+Python ships with an interactive shell called the REPL (Read-Eval-Print Loop). It is perfect for experimenting:
 
 \`\`\`python
-python3          # start the REPL
+python3
 >>> 2 + 2
 4
 >>> "hello".upper()
 'HELLO'
+>>> [x**2 for x in range(5)]
+[0, 1, 4, 9, 16]
 >>> exit()
 \`\`\`
 
-### Why Python
+Every expression you type is immediately evaluated and printed back. Use it constantly — it is faster than writing a script to test a small idea.
 
-| Domain | Tools |
-|--------|-------|
+### Where Python is used
+
+| Domain | Popular tools |
+|--------|--------------|
 | Web backends | Django, FastAPI, Flask |
-| Data science | pandas, NumPy, Jupyter |
-| Machine learning | PyTorch, TensorFlow, scikit-learn |
-| Scripting / automation | standard library, subprocess |
-| DevOps / infra | Ansible, AWS CDK, Terraform (via CDKTF) |
-| CLIs | Click, Typer, argparse |
+| Data science & analytics | pandas, NumPy, Jupyter |
+| Machine learning & AI | PyTorch, TensorFlow, scikit-learn |
+| Scripting & automation | standard library, subprocess |
+| DevOps & infrastructure | Ansible, AWS CDK |
+| CLI tools | Click, Typer, argparse |
 
 ### Python versions
 
-Always use **Python 3.10+**. Python 2 reached end-of-life in 2020. Check your version:
+Always use **Python 3.10 or later**. Python 2 reached end-of-life in 2020 and should never be used in new projects. Check what you have installed:
 
 \`\`\`bash
 python3 --version
@@ -48,122 +62,203 @@ python3 --version
 
 ### Virtual environments
 
-Isolate dependencies per project:
+Every project should have its own isolated set of packages. Without this, packages from one project can break another.
 
 \`\`\`bash
+# Create a virtual environment in .venv/
 python3 -m venv .venv
-source .venv/bin/activate    # Mac/Linux
-.venv\\Scripts\\activate       # Windows
 
-pip install requests
+# Activate it (Mac/Linux)
+source .venv/bin/activate
+
+# Activate it (Windows)
+.venv\\Scripts\\activate
+
+# Install packages — they go into .venv/, not globally
+pip install requests fastapi
+
+# Save your dependencies
 pip freeze > requirements.txt
+
+# Recreate environment from requirements
 pip install -r requirements.txt
 \`\`\`
 
-### Style guide
+### Code style
 
-Python code follows **PEP 8** — 4-space indentation, snake_case names, 79-char line limit. Use a formatter like **black** and a linter like **ruff** to enforce it automatically.`,
+Python code follows **PEP 8** — the official style guide:
+
+- **4 spaces** for indentation (never tabs)
+- **snake_case** for variables and functions (\`user_name\`, \`get_user\`)
+- **PascalCase** for classes (\`UserProfile\`, \`DatabaseError\`)
+- **UPPER_SNAKE_CASE** for constants (\`MAX_RETRIES\`)
+- Maximum line length of **79 characters**
+
+Use **black** to auto-format and **ruff** to catch issues — both run in milliseconds.`,
   },
   {
     slug: "variables-types",
     title: "Variables & Data Types",
-    description: "int, float, str, bool, None — how Python types work and type hints.",
+    description: "int, float, str, bool, None — how Python's type system works, type conversion, and type hints.",
     category: "python",
     content: `## Variables & Data Types
 
-Python is dynamically typed — variables hold references to objects, not typed memory slots. The type lives on the object, not the variable.
+### How variables work in Python
 
-### Core types
+Python variables are **references to objects**, not named memory boxes. When you write \`x = 42\`, you create an integer object \`42\` and point the name \`x\` at it. Multiple names can point to the same object:
 
 \`\`\`python
-x = 42           # int
-pi = 3.14159     # float
-name = "Alice"   # str
-active = True    # bool  (True / False, capital T/F)
-nothing = None   # NoneType — Python's null
+a = [1, 2, 3]
+b = a          # b points to the SAME list, not a copy
+b.append(4)
+print(a)       # [1, 2, 3, 4]  ← a is also changed!
 \`\`\`
 
-### Type checking
+This matters enormously when working with mutable objects like lists and dicts.
+
+### Core built-in types
+
+| Type | Example | Notes |
+|------|---------|-------|
+| \`int\` | \`42\`, \`-7\`, \`1_000_000\` | Arbitrary precision, no overflow |
+| \`float\` | \`3.14\`, \`2.0e10\` | 64-bit IEEE 754 |
+| \`str\` | \`"hello"\`, \`'world'\` | Immutable, Unicode by default |
+| \`bool\` | \`True\`, \`False\` | Subclass of int (True==1, False==0) |
+| \`NoneType\` | \`None\` | Python's null — exactly one instance exists |
 
 \`\`\`python
-type(42)          # <class 'int'>
-isinstance(42, int)   # True
-isinstance(42, (int, float))  # True — check multiple types
+x       = 42
+pi      = 3.14159
+name    = "Alice"
+active  = True
+nothing = None
 \`\`\`
 
-### Numbers
+### Number operations
+
+Python's integer division and modulo behave consistently with mathematics:
 
 \`\`\`python
-10 / 3    # 3.3333... (true division, always float)
-10 // 3   # 3         (floor division)
-10 % 3    # 1         (modulo)
-2 ** 10   # 1024      (exponent)
+10 / 3    # 3.3333...  (true division — always returns float)
+10 // 3   # 3          (floor division — rounds toward -infinity)
+10 % 3    # 1          (modulo — remainder)
+2 ** 10   # 1024       (exponentiation)
 abs(-5)   # 5
 round(3.567, 2)  # 3.57
 \`\`\`
 
-Python integers are arbitrary precision — no overflow.
+Underscores in numbers are ignored and improve readability:
+\`\`\`python
+population = 8_100_000_000
+\`\`\`
 
-### Strings
+### Strings — immutable sequences of Unicode characters
+
+Strings cannot be changed after creation. Every "modification" creates a new string:
 
 \`\`\`python
 s = "hello"
-s.upper()          # 'HELLO'
-s.replace("l", "r")  # 'herro'
-s[1:4]             # 'ell'  (slicing)
-len(s)             # 5
-"ll" in s          # True
-
-# f-strings (Python 3.6+) — preferred interpolation
-name = "Alice"
-age = 30
-f"Name: {name}, Age: {age}"        # "Name: Alice, Age: 30"
-f"Pi is approx {3.14159:.2f}"      # "Pi is approx 3.14"
+s[0] = "H"         # TypeError — strings are immutable
+s = s.capitalize() # creates a new string "Hello"
 \`\`\`
 
-### Multiline strings
+Common string operations:
 
 \`\`\`python
-text = """
-Line one
-Line two
-Line three
-"""
+"hello".upper()            # 'HELLO'
+"WORLD".lower()            # 'world'
+"  hi  ".strip()           # 'hi'
+"a,b,c".split(",")         # ['a', 'b', 'c']
+",".join(["a","b","c"])    # 'a,b,c'
+"hello".replace("l", "r")  # 'herro'
+"hello"[1:4]               # 'ell'  (slicing)
+len("hello")               # 5
+"ll" in "hello"            # True
 \`\`\`
 
-### Type conversion
+### f-strings — the preferred way to format strings
+
+f-strings (Python 3.6+) are faster and more readable than \`%\` formatting or \`.format()\`:
 
 \`\`\`python
-int("42")      # 42
-float("3.14")  # 3.14
-str(100)       # "100"
-bool(0)        # False  (falsy: 0, "", [], {}, None)
-bool(1)        # True
+name  = "Alice"
+age   = 30
+score = 98.5
+
+f"Name: {name}, Age: {age}"         # "Name: Alice, Age: 30"
+f"Score: {score:.1f}%"              # "Score: 98.5%"
+f"2 + 2 = {2 + 2}"                 # "2 + 2 = 4"
+f"{name!r}"                         # "'Alice'"  (repr format)
+f"{1_000_000:,}"                    # "1,000,000" (number format)
 \`\`\`
 
-### Type hints (Python 3.5+)
+### Truthiness and falsy values
 
-Type hints don't enforce types at runtime — they document intent and enable static analysis with mypy.
+In Python, many values are considered "falsy" in boolean context — you don't always need to compare explicitly:
+
+| Falsy values | Truthy values |
+|-------------|--------------|
+| \`None\` | Everything else |
+| \`False\` | \`True\` |
+| \`0\`, \`0.0\` | Any nonzero number |
+| \`""\` (empty string) | Any non-empty string |
+| \`[]\`, \`{}\`, \`set()\` | Any non-empty collection |
+
+\`\`\`python
+if user_list:           # True if list is non-empty
+    process(user_list)
+
+if not response:        # True if response is falsy (None, empty, 0…)
+    handle_missing()
+\`\`\`
+
+### Type checking and conversion
+
+\`\`\`python
+type(42)                     # <class 'int'>
+isinstance(42, int)          # True
+isinstance(42, (int, float)) # True — check multiple types at once
+
+# Explicit conversion
+int("42")        # 42
+int(3.9)         # 3  (truncates, does not round)
+float("3.14")    # 3.14
+str(100)         # "100"
+bool(0)          # False
+bool("hello")    # True
+list("abc")      # ['a', 'b', 'c']
+\`\`\`
+
+### Type hints
+
+Type hints let you annotate what types a function expects and returns. They are **not enforced at runtime** — they are documentation for humans and tools like mypy or your IDE:
 
 \`\`\`python
 def greet(name: str, times: int = 1) -> str:
     return (name + " ") * times
 
-from typing import Optional
-def find(id: int) -> Optional[str]:  # returns str or None
+# Python 3.10+ uses | for "or"
+def find(user_id: int) -> str | None:
     ...
-\`\`\`
 
-Python 3.10+ allows \`str | None\` instead of \`Optional[str]\`.`,
+# Older style
+from typing import Optional
+def find(user_id: int) -> Optional[str]:
+    ...
+\`\`\``,
   },
   {
     slug: "control-flow",
     title: "Control Flow",
-    description: "if/elif/else, for, while, break, continue, comprehensions, and the walrus operator.",
+    description: "if/elif/else, for, while, break/continue, comprehensions — controlling the path through your code.",
     category: "python",
     content: `## Control Flow
 
+Control flow determines which code runs and in what order. Python's syntax is deliberately minimal — no braces or parentheses required, just consistent indentation.
+
 ### if / elif / else
+
+The condition can be any expression that evaluates to truthy or falsy. Python checks branches top-to-bottom and stops at the first true one:
 
 \`\`\`python
 score = 85
@@ -178,109 +273,159 @@ else:
     grade = "F"
 \`\`\`
 
-### Ternary (conditional expression)
+### Ternary — one-line conditional
+
+When you need to assign one of two values based on a condition, use the inline form. Keep it simple — if the condition or values are complex, use a regular if/else block:
 
 \`\`\`python
-label = "pass" if score >= 60 else "fail"
+label  = "pass" if score >= 60 else "fail"
+status = "active" if user.is_active else "inactive"
 \`\`\`
 
-### for loops
+### for loops — iterating over sequences
 
-Python's \`for\` iterates over any iterable — not just ranges.
+Python's \`for\` loop works on **any iterable** — lists, strings, dicts, files, generators, and more. You never need an index unless you specifically want one:
 
 \`\`\`python
+# Iterate over a list
 for name in ["Alice", "Bob", "Carol"]:
     print(name)
 
-for i in range(5):       # 0 1 2 3 4
+# Iterate over a range of numbers
+for i in range(5):        # 0, 1, 2, 3, 4
     print(i)
 
-for i in range(2, 10, 2):  # 2 4 6 8
+for i in range(2, 10, 2): # 2, 4, 6, 8  (start, stop, step)
     print(i)
+\`\`\`
 
-# enumerate — get index and value
-for i, name in enumerate(["Alice", "Bob"], start=1):
-    print(i, name)   # 1 Alice, 2 Bob
+### enumerate — get index and value together
 
-# zip — iterate two lists together
+Avoid the anti-pattern \`for i in range(len(items))\`. Use \`enumerate\` instead:
+
+\`\`\`python
+fruits = ["apple", "banana", "cherry"]
+
+# Avoid this
+for i in range(len(fruits)):
+    print(i, fruits[i])
+
+# Do this
+for i, fruit in enumerate(fruits, start=1):
+    print(i, fruit)   # 1 apple, 2 banana, 3 cherry
+\`\`\`
+
+### zip — iterate two sequences together
+
+\`\`\`python
+names  = ["Alice", "Bob", "Carol"]
+scores = [85, 92, 78]
+
 for name, score in zip(names, scores):
-    print(name, score)
+    print(f"{name}: {score}")
 \`\`\`
 
 ### while loops
+
+Use \`while\` when you don't know the number of iterations in advance:
 
 \`\`\`python
 count = 0
 while count < 5:
     print(count)
     count += 1
+
+# Common pattern: loop until condition is met
+while not queue.empty():
+    item = queue.get()
+    process(item)
 \`\`\`
 
 ### break and continue
 
+- **break** exits the loop immediately
+- **continue** skips the rest of the current iteration and moves to the next
+
 \`\`\`python
 for n in range(10):
     if n == 3:
-        continue    # skip 3
+        continue    # skip 3, keep going
     if n == 7:
-        break       # stop at 7
-    print(n)        # prints 0 1 2 4 5 6
+        break       # stop entirely
+    print(n)        # prints: 0 1 2 4 5 6
 \`\`\`
 
-### for / else
+### for / else — the underused pattern
 
-The \`else\` clause on a loop runs if the loop completed **without** hitting \`break\`.
+The \`else\` block on a loop runs **only if the loop finished without hitting break**. This is a clean way to express "search and report if not found":
 
 \`\`\`python
-for item in items:
+target = 42
+for item in data:
     if item == target:
         print("Found!")
         break
 else:
-    print("Not found")
+    print("Not found in data")  # only runs if break never fired
 \`\`\`
 
-### List comprehensions
+### List comprehensions — concise collection building
 
-Compact, readable way to build lists:
+Comprehensions replace simple \`for\` loops that build a list. They are more readable and often faster:
 
 \`\`\`python
+# Traditional loop
+squares = []
+for x in range(10):
+    squares.append(x ** 2)
+
+# Comprehension — same result, one line
 squares = [x ** 2 for x in range(10)]
-evens   = [x for x in range(20) if x % 2 == 0]
-flat    = [n for row in matrix for n in row]   # nested
 
-# Dict and set comprehensions
-square_map = {x: x**2 for x in range(5)}
-unique_lengths = {len(w) for w in words}
+# With a filter
+evens = [x for x in range(20) if x % 2 == 0]
+
+# Nested — flatten a matrix
+flat = [n for row in matrix for n in row]
 \`\`\`
 
-### Walrus operator \`:=\` (Python 3.8+)
-
-Assign and test in one expression:
+Dict and set comprehensions follow the same pattern:
 
 \`\`\`python
-while chunk := file.read(8192):
-    process(chunk)
+word_lengths = {word: len(word) for word in ["apple", "fig", "mango"]}
+# {"apple": 5, "fig": 3, "mango": 5}
 
-# Instead of:
-results = [y for x in data if (y := transform(x)) > 0]
-\`\`\``,
+unique_lengths = {len(word) for word in words}
+# {3, 5}  — a set, so duplicates are removed
+\`\`\`
+
+### When not to use comprehensions
+
+If the logic requires multiple steps, side effects, or is hard to read in one line — use a regular loop. Comprehensions should be immediately understandable at a glance.`,
   },
   {
     slug: "functions",
     title: "Functions",
-    description: "def, args, kwargs, defaults, *args, **kwargs, lambdas, decorators, and closures.",
+    description: "def, default args, *args, **kwargs, lambdas, closures, and decorators explained.",
     category: "python",
     content: `## Functions
 
-### Basic definition
+Functions are the primary unit of reuse in Python. A well-designed function does one thing, takes clearly named inputs, and returns a clear output.
+
+### Defining functions
 
 \`\`\`python
 def add(a: int, b: int) -> int:
     return a + b
 \`\`\`
 
+- The \`def\` keyword starts the definition
+- Type hints (\`: int\`, \`-> int\`) are optional but recommended
+- \`return\` sends a value back; without it the function returns \`None\`
+
 ### Default arguments
+
+Parameters can have default values. They make arguments optional for the caller:
 
 \`\`\`python
 def greet(name: str, greeting: str = "Hello") -> str:
@@ -288,88 +433,111 @@ def greet(name: str, greeting: str = "Hello") -> str:
 
 greet("Alice")           # "Hello, Alice!"
 greet("Bob", "Hi")       # "Hi, Bob!"
+greet("Carol", greeting="Hey")  # "Hey, Carol!"
 \`\`\`
 
-**Never use mutable defaults** — they are shared across all calls:
+**Critical rule: never use mutable objects as default arguments.** The default is created once when the function is defined, not each time it is called. This causes a classic bug:
 
 \`\`\`python
-# BAD
-def add_item(item, lst=[]):
-    lst.append(item)
-    return lst
+# WRONG — 'results' is shared across all calls
+def add_item(item, results=[]):
+    results.append(item)
+    return results
 
-# GOOD
-def add_item(item, lst=None):
-    if lst is None:
-        lst = []
-    lst.append(item)
-    return lst
+add_item("a")  # ["a"]
+add_item("b")  # ["a", "b"]  ← bug! previous call's list
+
+# CORRECT — create a fresh list each call
+def add_item(item, results=None):
+    if results is None:
+        results = []
+    results.append(item)
+    return results
 \`\`\`
 
-### *args and **kwargs
+### *args — variable positional arguments
+
+When a function accepts any number of positional arguments, collect them into a tuple with \`*args\`:
 
 \`\`\`python
-def total(*args: int) -> int:          # variable positional args
+def total(*args: int) -> int:
     return sum(args)
 
-total(1, 2, 3, 4)   # 10
+total(1, 2, 3)      # 6
+total(10, 20)       # 30
+total()             # 0
+\`\`\`
 
-def log(**kwargs) -> None:             # variable keyword args
-    for k, v in kwargs.items():
-        print(f"{k}={v}")
+### **kwargs — variable keyword arguments
 
-log(user="Alice", action="login")
+Collect any number of keyword arguments into a dict with \`**kwargs\`:
+
+\`\`\`python
+def log(**kwargs) -> None:
+    for key, value in kwargs.items():
+        print(f"  {key}: {value}")
+
+log(user="Alice", action="login", ip="192.168.1.1")
 \`\`\`
 
 ### Keyword-only arguments
 
-Put a bare \`*\` to force callers to use keyword syntax:
+Place \`*\` in the signature to force callers to use keyword syntax for the following parameters. This prevents accidental positional mistakes:
 
 \`\`\`python
 def create_user(name: str, *, role: str = "member", active: bool = True):
     ...
 
 create_user("Alice", role="admin")   # correct
-create_user("Alice", "admin")        # TypeError
+create_user("Alice", "admin")        # TypeError — role must be keyword
 \`\`\`
 
-### Lambda functions
+### Lambdas — anonymous one-liners
 
-Anonymous, single-expression functions:
+A lambda is a function without a name. Use them for short callbacks — if the logic is more than one expression, write a regular \`def\`:
 
 \`\`\`python
 square = lambda x: x ** 2
 square(5)   # 25
 
-items.sort(key=lambda x: x["score"], reverse=True)
+# Common use: sort key
+users.sort(key=lambda u: u["score"], reverse=True)
 \`\`\`
 
-### Closures
+### Closures — functions that remember their environment
 
-A nested function that captures variables from its enclosing scope:
+A closure is a function that captures variables from the scope where it was defined, even after that scope has ended:
 
 \`\`\`python
-def make_multiplier(factor):
-    def multiply(n):
-        return n * factor    # 'factor' is captured
+def make_multiplier(factor: int):
+    def multiply(n: int) -> int:
+        return n * factor    # 'factor' is captured from outer scope
     return multiply
 
 double = make_multiplier(2)
+triple = make_multiplier(3)
+
 double(7)   # 14
+triple(7)   # 21
 \`\`\`
 
-### Decorators
+This is the foundation of decorators and factory functions.
 
-A decorator wraps a function to add behaviour:
+### Decorators — wrapping functions with extra behaviour
+
+A decorator is a function that takes a function and returns a new, enhanced function. The \`@syntax\` is syntactic sugar for \`func = decorator(func)\`:
 
 \`\`\`python
 import time
+from functools import wraps
 
 def timer(func):
+    @wraps(func)          # preserves original function's name and docstring
     def wrapper(*args, **kwargs):
         start = time.time()
         result = func(*args, **kwargs)
-        print(f"{func.__name__} took {time.time() - start:.3f}s")
+        elapsed = time.time() - start
+        print(f"{func.__name__} took {elapsed:.3f}s")
         return result
     return wrapper
 
@@ -377,203 +545,266 @@ def timer(func):
 def slow_function():
     time.sleep(1)
 
-slow_function()  # slow_function took 1.001s
+slow_function()   # "slow_function took 1.001s"
 \`\`\`
 
-Use \`functools.wraps\` to preserve the original function's metadata:
+Decorators stack — the bottom one is applied first:
 
 \`\`\`python
-from functools import wraps
-
-def timer(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        ...
-    return wrapper
+@require_auth
+@timer
+def get_profile(user_id: int):
+    ...
+# equivalent to: get_profile = require_auth(timer(get_profile))
 \`\`\``,
   },
   {
     slug: "data-structures",
     title: "Built-in Data Structures",
-    description: "list, dict, set, tuple — operations, complexity, and when to use each.",
+    description: "list, dict, set, tuple — what each is for, key operations, and when to choose which.",
     category: "python",
     content: `## Built-in Data Structures
 
-### List — ordered, mutable sequence
+Python's four built-in collection types cover almost every use case. Choosing the right one affects both correctness and performance.
+
+| Type | Ordered | Mutable | Allows duplicates | Key operation |
+|------|---------|---------|-------------------|---------------|
+| \`list\` | Yes | Yes | Yes | Access by index |
+| \`dict\` | Yes (3.7+) | Yes | Keys: No | Access by key |
+| \`set\` | No | Yes | No | Fast membership test |
+| \`tuple\` | Yes | **No** | Yes | Unpack, immutable record |
+
+### list — ordered, mutable sequence
+
+The workhorse collection. Use it when order matters and you need to add/remove items:
 
 \`\`\`python
 fruits = ["apple", "banana", "cherry"]
-fruits.append("date")          # add to end
-fruits.insert(1, "avocado")   # insert at index
-fruits.pop()                   # remove and return last
-fruits.pop(0)                  # remove and return at index
-fruits.remove("banana")        # remove first occurrence
-fruits.sort()                  # in-place sort
-sorted(fruits)                 # returns new sorted list
-fruits.reverse()               # in-place reverse
-fruits.index("cherry")         # find index
-"apple" in fruits              # True
-len(fruits)                    # count
+
+# Adding
+fruits.append("date")           # add to end
+fruits.insert(1, "avocado")     # insert at index 1
+fruits.extend(["elderberry"])   # add multiple
+
+# Removing
+fruits.pop()                    # remove and return last item
+fruits.pop(0)                   # remove and return item at index 0
+fruits.remove("banana")         # remove first occurrence by value
+
+# Searching and sorting
+fruits.index("cherry")          # index of first occurrence
+"apple" in fruits               # True — membership check
+fruits.sort()                   # in-place sort
+sorted(fruits)                  # returns new sorted list, original unchanged
+fruits.reverse()                # in-place reverse
 \`\`\`
 
-**Slicing:**
+**Slicing** — extract sub-lists without modifying the original:
+
 \`\`\`python
 lst = [0, 1, 2, 3, 4, 5]
-lst[2:5]     # [2, 3, 4]
-lst[:3]      # [0, 1, 2]
-lst[::2]     # [0, 2, 4]  (step)
-lst[::-1]    # [5, 4, 3, 2, 1, 0]  (reversed)
+lst[2:5]      # [2, 3, 4]       — from index 2 up to (not including) 5
+lst[:3]       # [0, 1, 2]       — from start to index 3
+lst[3:]       # [3, 4, 5]       — from index 3 to end
+lst[::2]      # [0, 2, 4]       — every second element
+lst[::-1]     # [5, 4, 3, 2, 1, 0]  — reversed
+lst[:]        # [0, 1, 2, 3, 4, 5]  — shallow copy
 \`\`\`
 
-### Dictionary — key-value map (insertion-ordered, Python 3.7+)
+### dict — key-value mapping
+
+Dicts are the go-to structure for labelled data. Keys must be hashable (strings, numbers, tuples):
 
 \`\`\`python
-user = {"name": "Alice", "age": 30}
-user["email"] = "alice@example.com"   # add/update
-user.get("phone", "N/A")              # safe read with default
-user.pop("age")                       # remove key
-"name" in user                        # True
+user = {"name": "Alice", "age": 30, "active": True}
 
-# Iterate
-for key in user:               print(key)
-for key, val in user.items():  print(key, val)
-for val in user.values():      print(val)
+# Reading
+user["name"]                  # "Alice" — raises KeyError if missing
+user.get("phone")             # None — safe, no error
+user.get("phone", "N/A")      # "N/A" — with default
 
-# Merge (Python 3.9+)
+# Writing
+user["email"] = "alice@example.com"   # add or update
+
+# Removing
+user.pop("age")               # removes key and returns value
+del user["active"]            # removes key, no return
+
+# Iterating
+for key in user:                    print(key)
+for key, val in user.items():       print(key, val)
+for val in user.values():           print(val)
+
+# Merge two dicts (Python 3.9+)
 defaults = {"timeout": 30, "retries": 3}
-config = defaults | {"timeout": 60}   # {"timeout":60, "retries":3}
+config = defaults | {"timeout": 60}      # {"timeout": 60, "retries": 3}
 \`\`\`
 
-### Set — unordered, unique values
+### set — unordered collection of unique values
+
+Sets automatically eliminate duplicates and provide O(1) membership tests. Use them for deduplication and mathematical set operations:
 
 \`\`\`python
-tags = {"python", "web", "python"}  # {"python", "web"}
+tags = {"python", "web", "python"}  # {"python", "web"} — duplicate removed
+
 tags.add("api")
-tags.discard("missing")   # no error if not found
+tags.discard("web")    # removes if present — no error if missing
+tags.remove("web")     # removes — raises KeyError if missing
 
-a = {1, 2, 3}
-b = {2, 3, 4}
-a | b    # union:        {1, 2, 3, 4}
-a & b    # intersection: {2, 3}
-a - b    # difference:   {1}
-a ^ b    # symmetric diff: {1, 4}
+a = {1, 2, 3, 4}
+b = {3, 4, 5, 6}
+
+a | b       # Union:        {1, 2, 3, 4, 5, 6}
+a & b       # Intersection: {3, 4}
+a - b       # Difference:   {1, 2}  (in a but not b)
+a ^ b       # Symmetric difference: {1, 2, 5, 6}
 \`\`\`
 
-### Tuple — ordered, immutable
+### tuple — ordered, immutable sequence
+
+Tuples are like lists that cannot change. Use them for fixed records, function returns, and dictionary keys:
 
 \`\`\`python
-point = (10, 20)
-x, y = point       # unpacking
-a, *rest = (1, 2, 3, 4)  # a=1, rest=[2,3,4]
+point    = (10, 20)
+rgb      = (255, 128, 0)
+response = (200, "OK", {"data": []})
 
-# Named tuples
-from collections import namedtuple
-Point = namedtuple("Point", ["x", "y"])
-p = Point(3, 4)
-p.x  # 3
+# Unpacking — extract values into variables
+x, y = point
+status, message, body = response
+
+# Star unpacking
+first, *rest = (1, 2, 3, 4, 5)   # first=1, rest=[2,3,4,5]
+*head, last  = (1, 2, 3, 4, 5)   # head=[1,2,3,4], last=5
 \`\`\`
 
-### Complexity at a glance
+### Performance comparison
 
-| Operation | List | Dict / Set |
+| Operation | list | dict / set |
 |-----------|------|-----------|
 | Access by index/key | O(1) | O(1) |
-| Search (in) | **O(n)** | O(1) |
-| Insert/delete at end | O(1) | O(1) |
-| Insert/delete at start | **O(n)** | O(1) |
+| Membership (\`in\`) | **O(n)** — scans every item | O(1) — hash lookup |
+| Append to end | O(1) amortized | O(1) |
+| Insert at start | **O(n)** — shifts everything | O(1) |
+| Delete by value | **O(n)** | O(1) |
 
-Use a **set** or **dict** instead of a list whenever you need fast membership testing.
+If you find yourself writing \`if x in my_list\` inside a loop, convert the list to a set first.
 
-### collections module extras
+### collections module — specialised containers
 
 \`\`\`python
 from collections import defaultdict, Counter, deque
 
-# defaultdict — no KeyError on missing keys
-dd = defaultdict(list)
-dd["a"].append(1)
+# defaultdict — no KeyError on first access to a missing key
+groups = defaultdict(list)
+for user in users:
+    groups[user.role].append(user.name)
 
-# Counter — count occurrences
-c = Counter("abracadabra")
-c.most_common(2)   # [('a', 5), ('b', 2)]
+# Counter — count occurrences of each element
+letter_counts = Counter("abracadabra")
+# Counter({'a': 5, 'b': 2, 'r': 2, 'c': 1, 'd': 1})
+letter_counts.most_common(2)   # [('a', 5), ('b', 2)]
 
-# deque — fast appends/pops from both ends
-dq = deque([1, 2, 3])
-dq.appendleft(0)
-dq.popleft()
+# deque — O(1) appends and pops from both ends
+queue = deque([1, 2, 3])
+queue.appendleft(0)   # [0, 1, 2, 3]
+queue.popleft()       # 0 — fast, unlike list.pop(0)
 \`\`\``,
   },
   {
     slug: "oop",
     title: "Object-Oriented Programming",
-    description: "Classes, __init__, inheritance, dunder methods, dataclasses, and properties.",
+    description: "Classes, __init__, inheritance, dunder methods, properties, and dataclasses — with clear explanations.",
     category: "python",
     content: `## Object-Oriented Programming
+
+OOP organises code around **objects** — bundles of data (attributes) and behaviour (methods). Python is fully object-oriented but does not force you to use classes — use them when the data and its associated operations naturally belong together.
 
 ### Defining a class
 
 \`\`\`python
 class Animal:
-    species = "Unknown"          # class attribute (shared)
+    species = "Unknown"          # class attribute — shared by all instances
 
     def __init__(self, name: str, age: int):
-        self.name = name         # instance attribute
+        self.name = name         # instance attribute — unique to each object
         self.age = age
 
     def speak(self) -> str:
         return f"{self.name} makes a sound"
 
-    def __repr__(self) -> str:   # unambiguous string for debugging
+    def __repr__(self) -> str:
         return f"Animal(name={self.name!r}, age={self.age})"
 
-    def __str__(self) -> str:    # human-readable string
+    def __str__(self) -> str:
         return self.name
-
-dog = Animal("Rex", 3)
-print(dog)        # Rex
-repr(dog)         # Animal(name='Rex', age=3)
 \`\`\`
 
-### Inheritance
+- \`__init__\` is the **constructor** — it runs when you create an instance
+- \`self\` refers to the instance being operated on. Always the first parameter
+- **Class attributes** are defined in the class body and shared. **Instance attributes** are set on \`self\` and are unique per object
+
+### Creating and using instances
+
+\`\`\`python
+cat = Animal("Whiskers", 4)
+dog = Animal("Rex", 2)
+
+print(cat.name)    # "Whiskers"
+print(cat)         # "Whiskers"  (calls __str__)
+repr(dog)          # "Animal(name='Rex', age=2)"  (calls __repr__)
+
+Animal.species     # "Unknown"
+cat.species        # "Unknown"  — found on the class
+\`\`\`
+
+### Inheritance — reusing and extending classes
+
+A subclass **inherits** everything from its parent and can override or extend it:
 
 \`\`\`python
 class Dog(Animal):
     def __init__(self, name: str, age: int, breed: str):
-        super().__init__(name, age)   # call parent __init__
+        super().__init__(name, age)   # always call parent's __init__
         self.breed = breed
 
-    def speak(self) -> str:           # override
+    def speak(self) -> str:           # override parent's method
         return f"{self.name} barks!"
 
-    def fetch(self) -> str:           # new method
+    def fetch(self) -> str:           # add new behaviour
         return f"{self.name} fetches the ball"
 
 rex = Dog("Rex", 3, "Labrador")
-rex.speak()    # "Rex barks!"
-isinstance(rex, Animal)  # True
+rex.speak()                # "Rex barks!"
+isinstance(rex, Dog)       # True
+isinstance(rex, Animal)    # True — Dog is an Animal
 \`\`\`
 
 ### Dunder (magic) methods
 
+Dunder methods let your objects work with Python's built-in operators and syntax. You define \`__add__\` and \`+\` just works:
+
 | Method | Triggered by |
 |--------|-------------|
-| \`__init__\` | \`ClassName(...)\` |
-| \`__repr__\` | \`repr(obj)\` |
-| \`__str__\` | \`str(obj)\`, \`print()\` |
+| \`__init__\` | \`MyClass(...)\` — constructor |
+| \`__repr__\` | \`repr(obj)\` — unambiguous representation |
+| \`__str__\` | \`str(obj)\`, \`print(obj)\` — readable string |
 | \`__len__\` | \`len(obj)\` |
 | \`__eq__\` | \`obj == other\` |
-| \`__lt__\` | \`obj < other\` |
+| \`__lt__\` | \`obj < other\` (also enables sorting) |
 | \`__add__\` | \`obj + other\` |
 | \`__contains__\` | \`x in obj\` |
-| \`__iter__\` | \`for x in obj\` |
-| \`__enter__\` / \`__exit__\` | \`with obj:\` |
+| \`__iter__\` | \`for x in obj:\` |
+| \`__enter__\` / \`__exit__\` | \`with obj:\` context manager |
 
 ### Properties — controlled attribute access
+
+Properties let you run code when an attribute is read, written, or deleted — without changing the calling syntax:
 
 \`\`\`python
 class Circle:
     def __init__(self, radius: float):
-        self._radius = radius
+        self._radius = radius     # convention: _ prefix means "internal"
 
     @property
     def radius(self) -> float:
@@ -586,108 +817,126 @@ class Circle:
         self._radius = value
 
     @property
-    def area(self) -> float:
+    def area(self) -> float:      # computed attribute — read-only
         import math
         return math.pi * self._radius ** 2
 
 c = Circle(5)
-c.radius = 10
-c.area   # 314.15...
+c.radius      # 5   (calls getter)
+c.radius = 10 # calls setter — validation runs
+c.area        # 314.159…
 \`\`\`
 
-### dataclasses (Python 3.7+)
+### dataclasses — eliminate boilerplate
 
-Eliminates boilerplate for data-holding classes:
+For classes that mainly hold data, \`@dataclass\` auto-generates \`__init__\`, \`__repr__\`, and \`__eq__\`:
 
 \`\`\`python
 from dataclasses import dataclass, field
 
 @dataclass
 class User:
-    name: str
+    name:  str
     email: str
-    age: int = 0
-    tags: list[str] = field(default_factory=list)
+    age:   int = 0
+    tags:  list[str] = field(default_factory=list)
 
     def is_adult(self) -> bool:
         return self.age >= 18
 
 alice = User("Alice", "alice@example.com", 30)
-# __init__, __repr__, __eq__ are auto-generated
+print(alice)   # User(name='Alice', email='alice@example.com', age=30, tags=[])
+alice == User("Alice", "alice@example.com", 30)  # True — __eq__ compares fields
 \`\`\`
 
-### Class and static methods
+### Class methods and static methods
 
 \`\`\`python
 class Config:
     _instance = None
 
     @classmethod
-    def get_instance(cls):       # cls = the class itself
+    def get_instance(cls):
+        # cls is the class itself — useful for alternate constructors
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
 
     @staticmethod
-    def validate_key(key: str) -> bool:  # no cls or self
+    def validate_key(key: str) -> bool:
+        # No cls or self — just a function namespaced to the class
         return len(key) >= 8
-\`\`\``,
+\`\`\`
+
+- Use \`@classmethod\` for factory methods or when you need access to the class
+- Use \`@staticmethod\` for utility functions that logically belong to the class but don't need instance or class data`,
   },
   {
     slug: "modules-packages",
     title: "Modules & Packages",
-    description: "import, __name__, creating packages, and the standard library highlights.",
+    description: "import, creating your own modules, packages, __name__, and the standard library.",
     category: "python",
     content: `## Modules & Packages
+
+### What is a module?
+
+Any \`.py\` file is a module. Modules let you split code across files and reuse it. When Python imports a module, it executes it once and caches it — subsequent imports reuse the cached version.
 
 ### Importing
 
 \`\`\`python
-import math
-math.sqrt(16)    # 4.0
+import math                        # import the whole module
+math.sqrt(16)                      # access with module prefix
 
-from math import sqrt, pi
-sqrt(16)         # 4.0
+from math import sqrt, pi          # import specific names
+sqrt(16)                           # use directly, no prefix
 
-from math import *          # imports everything (avoid — pollutes namespace)
+from math import sqrt as sq        # alias to avoid name collisions
+sq(16)
 
-import numpy as np          # alias
+import numpy as np                 # conventional alias
 np.array([1, 2, 3])
 \`\`\`
 
-### Creating a module
+Avoid \`from module import *\` — it floods your namespace with unknown names and makes code hard to reason about.
 
-Any \`.py\` file is a module. \`utils.py\`:
+### Creating your own module
+
+Write a file \`utils.py\`:
 
 \`\`\`python
 # utils.py
 def slugify(text: str) -> str:
-    return text.lower().replace(" ", "-")
+    return text.lower().strip().replace(" ", "-")
 
-PI = 3.14159
+MAX_RETRIES = 3
 \`\`\`
+
+Import and use it from another file in the same directory:
 
 \`\`\`python
 # main.py
-from utils import slugify
+from utils import slugify, MAX_RETRIES
+
 slugify("Hello World")   # "hello-world"
 \`\`\`
 
-### \`__name__\` guard
+### The \`__name__\` guard
 
-Code inside this block only runs when the file is executed directly, not when imported:
+When Python runs a file directly, it sets \`__name__\` to \`"__main__"\`. When the file is imported by another module, \`__name__\` is the module's filename. This guard lets you write code that only runs when the file is executed directly:
 
 \`\`\`python
 def main():
-    print("Running!")
+    print("Running the program")
 
 if __name__ == "__main__":
-    main()
+    main()   # Only runs with: python script.py
+             # NOT when: import script
 \`\`\`
 
-### Packages
+### Packages — organising modules into directories
 
-A directory with \`__init__.py\` is a package:
+A directory with an \`__init__.py\` file is a **package**. The \`__init__.py\` can be empty or contain initialisation code:
 
 \`\`\`
 myapp/
@@ -695,6 +944,11 @@ myapp/
   models/
     __init__.py
     user.py
+    product.py
+  services/
+    __init__.py
+    email.py
+    payment.py
   utils/
     __init__.py
     format.py
@@ -702,54 +956,80 @@ myapp/
 
 \`\`\`python
 from myapp.models.user import User
+from myapp.services.email import send_welcome
 from myapp.utils.format import slugify
+\`\`\`
+
+### Relative imports (within a package)
+
+\`\`\`python
+# Inside myapp/services/email.py
+from ..models.user import User    # go up one level, then into models
+from .payment import charge       # same package
 \`\`\`
 
 ### Standard library highlights
 
-| Module | Use |
-|--------|-----|
-| \`os\` | file paths, env vars, process management |
-| \`sys\` | command-line args, Python version, exit |
-| \`pathlib\` | object-oriented file path manipulation |
-| \`json\` | encode/decode JSON |
-| \`re\` | regular expressions |
-| \`datetime\` | dates, times, timezones |
-| \`collections\` | Counter, defaultdict, deque, OrderedDict |
-| \`itertools\` | chain, product, combinations, groupby |
-| \`functools\` | reduce, lru_cache, partial, wraps |
-| \`dataclasses\` | auto-generated class boilerplate |
-| \`typing\` | type hints |
-| \`logging\` | structured application logging |
-| \`unittest\` / \`pytest\` | testing |
-| \`subprocess\` | run shell commands |
-| \`threading\` / \`multiprocessing\` | concurrency |
-| \`http.server\` | quick local HTTP server |
+Python ships with a vast standard library — you can do enormous amounts without installing anything:
 
-### pathlib example
+| Module | What it gives you |
+|--------|------------------|
+| \`os\` | File paths, environment variables, process info |
+| \`sys\` | Command-line args, Python version, \`sys.exit()\` |
+| \`pathlib\` | Object-oriented file path manipulation |
+| \`json\` | Encode and decode JSON |
+| \`re\` | Regular expressions |
+| \`datetime\` | Dates, times, timezones, duration |
+| \`collections\` | Counter, defaultdict, deque, namedtuple |
+| \`itertools\` | chain, product, combinations, groupby |
+| \`functools\` | lru_cache, partial, reduce, wraps |
+| \`dataclasses\` | Auto-generated class boilerplate |
+| \`logging\` | Structured application logging |
+| \`subprocess\` | Run shell commands |
+| \`threading\` | OS threads for I/O concurrency |
+| \`multiprocessing\` | True parallelism for CPU-bound work |
+| \`urllib\` / \`http\` | HTTP without third-party libs |
+| \`unittest\` | Built-in testing (use pytest in practice) |
+
+### pathlib — the modern way to handle files
 
 \`\`\`python
 from pathlib import Path
 
-p = Path("data/reports")
-p.mkdir(parents=True, exist_ok=True)
+p = Path("data/reports/2024")
+p.mkdir(parents=True, exist_ok=True)   # create directory tree
 
 config = Path("config.json")
-text = config.read_text()
+config.exists()        # True or False
+config.is_file()
+config.suffix          # ".json"
+config.stem            # "config"
+config.parent          # Path(".")
+
+# Build paths safely (cross-platform)
+output = p / "summary.csv"
+
+# Read and write
+text = config.read_text(encoding="utf-8")
 config.write_text('{"debug": true}')
 
-for f in Path(".").glob("**/*.py"):
-    print(f)
+# Find files recursively
+for py_file in Path(".").glob("**/*.py"):
+    print(py_file)
 \`\`\``,
   },
   {
     slug: "error-handling",
     title: "Error Handling",
-    description: "try/except/finally, raising exceptions, custom exception classes, and context managers.",
+    description: "try/except/finally, exception types, raising errors, custom exceptions, and context managers.",
     category: "python",
     content: `## Error Handling
 
-### try / except / else / finally
+Good error handling makes programs predictable: they fail clearly and clean up after themselves rather than crashing silently or leaving data in a broken state.
+
+### How exceptions work
+
+When an error occurs, Python raises an **exception** — an object describing what went wrong. If nothing catches it, the program prints a traceback and exits. You catch exceptions with \`try/except\`.
 
 \`\`\`python
 try:
@@ -758,48 +1038,65 @@ except ZeroDivisionError:
     print("Cannot divide by zero")
 except ValueError as e:
     print(f"Invalid input: {e}")
-except (TypeError, OverflowError) as e:
-    print(f"Math error: {e}")
 else:
-    print(f"Result: {result}")   # runs only if no exception
+    print(f"Result: {result}")    # runs only when NO exception occurred
 finally:
-    print("Always runs — for cleanup")
+    print("This always runs")     # cleanup — runs whether or not an exception happened
 \`\`\`
 
-### Exception hierarchy
+- \`except\` catches and handles the error
+- \`else\` contains code that should only run on success (keeps "happy path" separate from error handling)
+- \`finally\` always runs — use it to release resources
+
+### The exception hierarchy
+
+Python's exceptions form a tree. Catching a parent class also catches all its children:
 
 \`\`\`
 BaseException
-├── SystemExit
-├── KeyboardInterrupt
-└── Exception
-    ├── ValueError
-    ├── TypeError
-    ├── IndexError
-    ├── KeyError
-    ├── AttributeError
-    ├── FileNotFoundError  (subclass of OSError)
+├── SystemExit            ← raised by sys.exit()
+├── KeyboardInterrupt     ← Ctrl+C
+└── Exception             ← all normal errors inherit from this
+    ├── ValueError        ← wrong value type/range
+    ├── TypeError         ← wrong type for operation
+    ├── IndexError        ← list index out of range
+    ├── KeyError          ← dict key not found
+    ├── AttributeError    ← object has no such attribute
+    ├── NameError         ← variable not defined
+    ├── OSError
+    │   └── FileNotFoundError
     ├── ZeroDivisionError
     └── RuntimeError
 \`\`\`
 
-Catch the **most specific** exception first.
+Always catch the **most specific** exception first. Avoid bare \`except:\` — it catches even \`SystemExit\` and \`KeyboardInterrupt\`, which is almost never what you want.
 
 ### Raising exceptions
 
+Use \`raise\` to signal that something went wrong. Include a clear, actionable message:
+
 \`\`\`python
-def set_age(age: int):
-    if age < 0:
-        raise ValueError(f"Age cannot be negative: {age}")
+def set_age(age: int) -> None:
     if not isinstance(age, int):
-        raise TypeError("Age must be an integer")
-    ...
+        raise TypeError(f"Age must be int, got {type(age).__name__}")
+    if age < 0 or age > 150:
+        raise ValueError(f"Age out of range: {age}")
+
+# Re-raise an exception after logging it
+try:
+    risky_operation()
+except Exception as e:
+    log.error("Failed: %s", e)
+    raise   # re-raises the same exception
 \`\`\`
 
 ### Custom exceptions
 
+Define your own exception hierarchy to distinguish your app's errors from built-in ones:
+
 \`\`\`python
 class AppError(Exception):
+    """Base class for all application errors."""
     pass
 
 class AuthError(AppError):
@@ -807,78 +1104,88 @@ class AuthError(AppError):
         super().__init__(message)
         self.code = code
 
-try:
-    raise AuthError("Token expired", code=401)
-except AuthError as e:
-    print(e.code, e)   # 401 Token expired
+class NotFoundError(AppError):
+    pass
 \`\`\`
 
-### Context managers — with statement
+\`\`\`python
+try:
+    raise AuthError("Token has expired", code=401)
+except AuthError as e:
+    return {"error": str(e), "code": e.code}
+except AppError as e:
+    return {"error": str(e)}
+\`\`\`
 
-The \`with\` statement guarantees cleanup even if an exception occurs.
+### Context managers — guaranteed cleanup
+
+The \`with\` statement ensures cleanup code (closing a file, releasing a lock) always runs, even if an exception occurs. It calls \`__enter__\` on entry and \`__exit__\` on exit:
 
 \`\`\`python
-# File — always closed even on exception
-with open("data.txt", "r") as f:
-    content = f.read()
+# Without context manager — buggy if exception occurs before close()
+f = open("data.txt")
+data = f.read()   # if this raises, f.close() never runs
+f.close()
 
-# Multiple contexts
-with open("in.txt") as src, open("out.txt", "w") as dst:
+# With context manager — file ALWAYS closed
+with open("data.txt", "r") as f:
+    data = f.read()
+
+# Multiple resources in one statement
+with open("input.txt") as src, open("output.txt", "w") as dst:
     dst.write(src.read())
 \`\`\`
 
-### Custom context manager
+### Writing your own context manager
+
+The easiest way is with \`@contextmanager\` from functools:
 
 \`\`\`python
 from contextlib import contextmanager
+import time
 
 @contextmanager
 def timer(label: str):
-    import time
     start = time.time()
     try:
-        yield
+        yield                      # code inside 'with' block runs here
     finally:
-        print(f"{label}: {time.time() - start:.3f}s")
+        elapsed = time.time() - start
+        print(f"{label}: {elapsed:.3f}s")
 
-with timer("loading data"):
-    load_large_file()
-\`\`\`
-
-Or implement via \`__enter__\` / \`__exit__\`:
-
-\`\`\`python
-class DatabaseConnection:
-    def __enter__(self):
-        self.conn = connect()
-        return self.conn
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.conn.close()
-        return False  # don't suppress exceptions
+with timer("data loading"):
+    load_large_dataset()
+# prints: "data loading: 2.341s"
 \`\`\``,
   },
   {
     slug: "iterators-generators",
     title: "Iterators & Generators",
-    description: "The iterator protocol, yield, generator expressions, and lazy evaluation.",
+    description: "The iterator protocol, yield, generator expressions, and lazy evaluation for memory-efficient code.",
     category: "python",
     content: `## Iterators & Generators
 
-### The iterator protocol
+### What is an iterable vs an iterator?
 
-Any object implementing \`__iter__\` and \`__next__\` is an iterator. The \`for\` loop calls these under the hood.
+- An **iterable** is any object you can loop over: lists, strings, dicts, files, etc.
+- An **iterator** is an object that produces values one at a time and remembers where it left off.
+- Every iterator is an iterable. Not every iterable is an iterator.
+
+When Python's \`for\` loop runs, it calls \`iter()\` to get an iterator, then repeatedly calls \`next()\` until \`StopIteration\` is raised:
 
 \`\`\`python
 nums = [1, 2, 3]
-it = iter(nums)
+it = iter(nums)      # get an iterator
+
 next(it)   # 1
 next(it)   # 2
 next(it)   # 3
-next(it)   # StopIteration
+next(it)   # raises StopIteration — loop ends
 \`\`\`
 
 ### Custom iterator
+
+Implement \`__iter__\` (return self) and \`__next__\` (return next value or raise StopIteration):
 
 \`\`\`python
 class Countdown:
@@ -886,7 +1193,7 @@ class Countdown:
         self.n = start
 
     def __iter__(self):
-        return self
+        return self           # the iterator is the object itself
 
     def __next__(self):
         if self.n <= 0:
@@ -894,148 +1201,213 @@ class Countdown:
         self.n -= 1
         return self.n + 1
 
-list(Countdown(5))  # [5, 4, 3, 2, 1]
+for x in Countdown(5):
+    print(x)      # 5 4 3 2 1
 \`\`\`
 
-### Generators — iterators via \`yield\`
+### Generators — the easy way to write iterators
 
-A generator function pauses at each \`yield\` and resumes on the next \`next()\` call. It never builds the whole sequence in memory.
+A **generator function** uses \`yield\` instead of \`return\`. When called, it returns a generator object immediately without running any code. The code runs lazily — pausing at each \`yield\` and resuming on the next \`next()\` call.
+
+This is enormously valuable: you can produce millions of values without ever holding them all in memory at once:
 
 \`\`\`python
 def fibonacci():
     a, b = 0, 1
-    while True:
+    while True:               # infinite sequence — but lazy!
         yield a
         a, b = b, a + b
 
 gen = fibonacci()
-[next(gen) for _ in range(8)]  # [0, 1, 1, 2, 3, 5, 8, 13]
+next(gen)   # 0
+next(gen)   # 1
+next(gen)   # 1
+next(gen)   # 2
+
+# First 10 Fibonacci numbers
+import itertools
+list(itertools.islice(fibonacci(), 10))   # [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]
 \`\`\`
 
+### Real-world generator: chunked file reading
+
+Without a generator, reading a large file loads everything into memory. With a generator, you process one chunk at a time:
+
 \`\`\`python
-def read_chunks(filepath: str, size: int = 8192):
+def read_in_chunks(filepath: str, chunk_size: int = 8192):
     with open(filepath, "rb") as f:
-        while chunk := f.read(size):
-            yield chunk
+        while chunk := f.read(chunk_size):
+            yield chunk              # caller gets one chunk, then we pause
 
-for chunk in read_chunks("large_file.bin"):
-    process(chunk)   # never loads whole file into memory
+for chunk in read_in_chunks("large_video.mp4"):
+    upload_chunk(chunk)             # memory usage stays constant
 \`\`\`
 
-### Generator expressions
+### Generator expressions — lazy comprehensions
 
-Like list comprehensions, but lazy — values are produced on demand.
+Same syntax as list comprehensions but with \`()\` instead of \`[]\`. Nothing is computed until you iterate:
 
 \`\`\`python
-squares_gen = (x ** 2 for x in range(1_000_000))  # no memory spike
-total = sum(x ** 2 for x in range(1_000_000))      # efficient
+# List comprehension — builds ALL squares immediately
+squares_list = [x**2 for x in range(1_000_000)]    # uses ~8MB of RAM
 
-# Compare:
-[x**2 for x in range(10)]   # list — eager, 10 items built now
-(x**2 for x in range(10))   # generator — lazy, nothing built yet
+# Generator expression — computes one at a time
+squares_gen  = (x**2 for x in range(1_000_000))    # uses ~200 bytes
+
+# Works perfectly in sum/any/all — no intermediate list needed
+total = sum(x**2 for x in range(1_000_000))
+found = any(x > 500 for x in data)
 \`\`\`
 
-### \`yield from\`
+### \`yield from\` — delegating to another iterable
 
-Delegate to a sub-generator:
+\`yield from\` forwards every item from an iterable as if you had yielded them one by one:
 
 \`\`\`python
-def chain(*iterables):
-    for it in iterables:
-        yield from it
+def flatten(nested):
+    for item in nested:
+        if isinstance(item, list):
+            yield from flatten(item)   # recurse into sub-lists
+        else:
+            yield item
 
-list(chain([1, 2], [3, 4], [5]))  # [1, 2, 3, 4, 5]
+list(flatten([1, [2, 3], [4, [5, 6]]]))   # [1, 2, 3, 4, 5, 6]
 \`\`\`
 
-### itertools — generator tools
+### itertools — power tools for iterators
 
 \`\`\`python
-from itertools import islice, chain, product, groupby, combinations
+from itertools import islice, chain, combinations, groupby, product
 
-list(islice(fibonacci(), 10))   # first 10 Fibonacci numbers
+# chain — join multiple iterables
+list(chain([1,2], [3,4], [5]))   # [1, 2, 3, 4, 5]
 
 # combinations
-list(combinations([1,2,3], 2))  # [(1,2),(1,3),(2,3)]
+list(combinations("ABC", 2))    # [('A','B'), ('A','C'), ('B','C')]
 
-# groupby
-data = [{"type": "a"}, {"type": "a"}, {"type": "b"}]
-for key, group in groupby(data, key=lambda x: x["type"]):
+# product — cartesian product (nested loops)
+list(product([1,2], ["a","b"])) # [(1,'a'), (1,'b'), (2,'a'), (2,'b')]
+
+# groupby — group consecutive identical keys
+data = [("a",1), ("a",2), ("b",3)]
+for key, group in groupby(data, key=lambda x: x[0]):
     print(key, list(group))
 \`\`\``,
   },
   {
     slug: "file-io",
     title: "File I/O & JSON",
-    description: "Reading and writing files, CSV, JSON, and pathlib for path manipulation.",
+    description: "Reading and writing text and binary files, JSON serialisation, CSV, and working with paths.",
     category: "python",
     content: `## File I/O & JSON
 
-### Reading files
+### Opening files — always use \`with\`
+
+The \`with\` statement guarantees the file is closed when the block exits, even if an exception occurs:
 
 \`\`\`python
-# Read entire file
 with open("data.txt", "r", encoding="utf-8") as f:
-    content = f.read()
+    content = f.read()         # entire file as one string
 
-# Read line by line (memory efficient for large files)
 with open("data.txt") as f:
-    for line in f:
+    lines = f.readlines()      # list of lines (includes \\n)
+
+with open("data.txt") as f:
+    for line in f:             # memory-efficient: one line at a time
         print(line.strip())
-
-# Read all lines into a list
-with open("data.txt") as f:
-    lines = f.readlines()
-
-# One-liner with pathlib
-from pathlib import Path
-text = Path("data.txt").read_text(encoding="utf-8")
 \`\`\`
+
+Always specify \`encoding="utf-8"\` explicitly — the default varies by OS and can cause silent data corruption.
+
+### File modes
+
+| Mode | Behaviour |
+|------|-----------|
+| \`"r"\` | Read text (default — fails if file missing) |
+| \`"w"\` | Write text (creates or **truncates** existing) |
+| \`"a"\` | Append text (creates if missing) |
+| \`"x"\` | Create and write (fails if file already exists) |
+| \`"rb"\` | Read binary |
+| \`"wb"\` | Write binary |
 
 ### Writing files
 
 \`\`\`python
 with open("output.txt", "w", encoding="utf-8") as f:
-    f.write("Hello, World!\\n")
+    f.write("Line one\\n")
+    f.write("Line two\\n")
 
-# Append mode
+# writelines — write a list of strings (does NOT add newlines automatically)
+lines = ["apple\\n", "banana\\n", "cherry\\n"]
+with open("fruits.txt", "w") as f:
+    f.writelines(lines)
+
+# Append — add to end of existing file
 with open("log.txt", "a") as f:
-    f.write("New log entry\\n")
-
-# pathlib
-Path("output.txt").write_text("Hello, World!")
+    f.write(f"{timestamp}: user logged in\\n")
 \`\`\`
 
-### File modes
+### pathlib — modern path handling
 
-| Mode | Meaning |
-|------|---------|
-| \`"r"\` | Read (default) |
-| \`"w"\` | Write (truncates) |
-| \`"a"\` | Append |
-| \`"x"\` | Create, fail if exists |
-| \`"b"\` | Binary mode (e.g., \`"rb"\`) |
-| \`"t"\` | Text mode (default) |
+Prefer \`pathlib.Path\` over string manipulation for file paths. It works correctly on Windows, Mac, and Linux:
 
-### JSON
+\`\`\`python
+from pathlib import Path
+
+# Build paths safely — no manual "/" + "/" concatenation
+base = Path("data") / "reports" / "2024"
+base.mkdir(parents=True, exist_ok=True)
+
+output = base / "summary.txt"
+output.write_text("Total: 42", encoding="utf-8")
+text = output.read_text(encoding="utf-8")
+
+# Inspect paths
+output.exists()          # True
+output.is_file()         # True
+output.suffix            # ".txt"
+output.stem              # "summary"
+output.parent            # Path("data/reports/2024")
+
+# Find files
+for csv in Path(".").glob("**/*.csv"):
+    print(csv)
+\`\`\`
+
+### JSON — serialise Python objects
 
 \`\`\`python
 import json
 
-# Serialize Python → JSON string
-data = {"name": "Alice", "scores": [95, 87, 92]}
-json_str = json.dumps(data, indent=2)
+user = {"name": "Alice", "scores": [95, 87, 92], "active": True}
 
-# Deserialize JSON string → Python
+# Python → JSON string
+json_str = json.dumps(user)             # compact
+json_str = json.dumps(user, indent=2)  # readable with indentation
+
+# JSON string → Python
 parsed = json.loads(json_str)
-parsed["name"]   # "Alice"
+parsed["name"]    # "Alice"
+parsed["scores"]  # [95, 87, 92]
 
-# Read/write JSON files
+# Read/write JSON files directly
 with open("config.json", "w") as f:
-    json.dump(data, f, indent=2)
+    json.dump(user, f, indent=2)
 
 with open("config.json") as f:
     config = json.load(f)
 \`\`\`
+
+**Python ↔ JSON type mapping:**
+
+| Python | JSON |
+|--------|------|
+| \`dict\` | object \`{}\` |
+| \`list\` / \`tuple\` | array \`[]\` |
+| \`str\` | string |
+| \`int\` / \`float\` | number |
+| \`True\` / \`False\` | \`true\` / \`false\` |
+| \`None\` | \`null\` |
 
 ### CSV
 
@@ -1043,589 +1415,465 @@ with open("config.json") as f:
 import csv
 
 # Write CSV
-with open("users.csv", "w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=["name", "email", "age"])
+headers = ["name", "email", "age"]
+rows = [
+    {"name": "Alice", "email": "alice@example.com", "age": 30},
+    {"name": "Bob",   "email": "bob@example.com",   "age": 25},
+]
+
+with open("users.csv", "w", newline="", encoding="utf-8") as f:
+    writer = csv.DictWriter(f, fieldnames=headers)
     writer.writeheader()
-    writer.writerows([
-        {"name": "Alice", "email": "alice@example.com", "age": 30},
-        {"name": "Bob",   "email": "bob@example.com",   "age": 25},
-    ])
+    writer.writerows(rows)
 
 # Read CSV
-with open("users.csv") as f:
+with open("users.csv", encoding="utf-8") as f:
     reader = csv.DictReader(f)
     for row in reader:
         print(row["name"], row["age"])
 \`\`\`
 
-### pathlib for paths
+The \`newline=""\` when writing prevents double line endings on Windows.`,
+  },
+  {
+    slug: "async-await",
+    title: "Async & Await",
+    description: "Coroutines, the event loop, asyncio.gather, tasks, and when to use async vs threads vs processes.",
+    category: "python",
+    content: `## Async & Await
+
+### The core problem: waiting on I/O
+
+A typical web server spends most of its time *waiting* — for a database query to return, for a network response, for a file to be read. During that wait, a traditional synchronous program sits idle and can't do anything else.
+
+Async Python solves this with **cooperative concurrency**: while one task waits on I/O, control is handed to another task that's ready to run. No wasted idle time.
+
+### Coroutines — the building block
+
+A coroutine is a function defined with \`async def\`. It does not run when called — it returns a coroutine object. You must \`await\` it to actually run it:
 
 \`\`\`python
-from pathlib import Path
+import asyncio
 
-p = Path("/data/reports/2024")
-p.mkdir(parents=True, exist_ok=True)
+async def greet(name: str) -> str:
+    await asyncio.sleep(1)   # pause here — give control to other tasks
+    return f"Hello, {name}!"
 
-p.exists()          # True/False
-p.is_file()
-p.is_dir()
-p.suffix            # ".txt"
-p.stem              # "report" (filename without extension)
-p.parent            # Path("/data/reports")
-p / "output.csv"    # Path("/data/reports/2024/output.csv")
+# Run the event loop
+result = asyncio.run(greet("Alice"))
+print(result)   # "Hello, Alice!" (after 1 second)
+\`\`\`
 
-# Find files
-for csv_file in Path(".").glob("**/*.csv"):
-    print(csv_file)
+\`asyncio.run()\` starts the event loop, runs the coroutine, and closes the loop when it finishes. Use it only at the top level.
+
+### Concurrent tasks — the whole point
+
+Running coroutines sequentially with \`await\` is just as slow as synchronous code. The power comes from running them **concurrently** with \`asyncio.gather()\`:
+
+\`\`\`python
+async def fetch(url: str) -> str:
+    await asyncio.sleep(1)     # simulates 1s network request
+    return f"data from {url}"
+
+async def main():
+    # Sequential — takes 3 seconds total
+    r1 = await fetch("url1")
+    r2 = await fetch("url2")
+    r3 = await fetch("url3")
+
+    # Concurrent — takes ~1 second total
+    r1, r2, r3 = await asyncio.gather(
+        fetch("url1"),
+        fetch("url2"),
+        fetch("url3"),
+    )
+
+asyncio.run(main())
+\`\`\`
+
+### Tasks — fire and forget
+
+\`asyncio.create_task()\` schedules a coroutine to run immediately without waiting for it. Useful when you want to kick off work and continue:
+
+\`\`\`python
+async def main():
+    task = asyncio.create_task(long_background_job())
+    # task is running now, we can do other work
+    await do_something_else()
+    result = await task   # wait for background job to finish
+\`\`\`
+
+### Error handling with gather
+
+By default, if one coroutine fails, \`gather\` cancels and re-raises the first exception. Use \`return_exceptions=True\` to collect both results and errors:
+
+\`\`\`python
+results = await asyncio.gather(
+    fetch("url1"),
+    fetch("bad_url"),
+    return_exceptions=True   # exceptions returned as values, not raised
+)
+for r in results:
+    if isinstance(r, Exception):
+        print(f"Error: {r}")
+    else:
+        print(r)
+\`\`\`
+
+### Async context managers and iterators
+
+Third-party async libraries (aiohttp, asyncpg, aiofiles) use async context managers:
+
+\`\`\`python
+import aiohttp
+
+async def fetch_json(url: str) -> dict:
+    async with aiohttp.ClientSession() as session:       # async with
+        async with session.get(url) as response:
+            return await response.json()
+
+async def read_lines(filepath: str):
+    import aiofiles
+    async with aiofiles.open(filepath) as f:
+        async for line in f:                             # async for
+            yield line.strip()
+\`\`\`
+
+### When to use what
+
+| Use case | Right tool | Why |
+|----------|-----------|-----|
+| Many HTTP requests | **asyncio** | I/O-bound, high concurrency |
+| Database queries | **asyncio** | I/O-bound |
+| CPU-heavy computation | **multiprocessing** | Bypasses the GIL |
+| Legacy blocking code | **threading** | asyncio requires async-compatible libraries |
+| Simple parallel tasks | \`concurrent.futures\` | Cleaner API over both thread/process pools |
+
+### The GIL — why async doesn't help with CPU work
+
+Python's **Global Interpreter Lock (GIL)** means only one thread executes Python bytecode at a time. This makes threading and async safe for I/O (they yield voluntarily) but ineffective for CPU-bound work. For true parallel CPU computation, use \`multiprocessing\`.`,
+  },
+  {
+    slug: "testing",
+    title: "Testing with pytest",
+    description: "Writing tests, fixtures, parametrize, mocking, and measuring test coverage.",
+    category: "python",
+    content: `## Testing with pytest
+
+### Why test?
+
+Tests are your safety net. They let you change code with confidence — if you break something, a test catches it before production does. Good tests also document how your code is supposed to behave.
+
+### Installing and running pytest
+
+\`\`\`bash
+pip install pytest pytest-cov
+
+pytest                           # discover and run all tests
+pytest tests/test_user.py        # run a specific file
+pytest tests/test_user.py::test_login  # run a specific test
+pytest -v                        # verbose — show each test name
+pytest -k "login or register"    # run tests matching a name pattern
+pytest --tb=short                # shorter traceback on failures
+\`\`\`
+
+pytest discovers tests by looking for files named \`test_*.py\` or \`*_test.py\` and functions named \`test_*\`.
+
+### Writing basic tests
+
+Tests are plain functions. Use \`assert\` to check expected outcomes:
+
+\`\`\`python
+# tests/test_math.py
+from myapp.utils import add, slugify
+
+def test_add_positive_numbers():
+    assert add(2, 3) == 5
+
+def test_add_negative_numbers():
+    assert add(-1, -1) == -2
+
+def test_slugify_replaces_spaces():
+    assert slugify("Hello World") == "hello-world"
+
+def test_slugify_lowercases():
+    assert slugify("PYTHON") == "python"
+\`\`\`
+
+Keep tests **small and focused** — one concept per test. Give them descriptive names that read like sentences.
+
+### Testing exceptions
+
+\`\`\`python
+import pytest
+from myapp.utils import divide
+
+def test_divide_by_zero_raises():
+    with pytest.raises(ZeroDivisionError, match="Cannot divide by zero"):
+        divide(10, 0)
+
+def test_invalid_input_raises():
+    with pytest.raises(TypeError):
+        divide("ten", 2)
+\`\`\`
+
+### Fixtures — reusable setup and teardown
+
+A fixture is a function that provides a resource to tests. pytest injects them by name:
+
+\`\`\`python
+import pytest
+from myapp.db import Database, User
+
+@pytest.fixture
+def db():
+    # Setup — runs before the test
+    database = Database(":memory:")
+    database.migrate()
+    yield database          # the test receives this value
+    # Teardown — runs after the test, even if it fails
+    database.close()
+
+def test_create_user(db):
+    user = db.create_user("alice@example.com")
+    assert user.id is not None
+    assert user.email == "alice@example.com"
+
+def test_duplicate_email_raises(db):
+    db.create_user("alice@example.com")
+    with pytest.raises(ValueError):
+        db.create_user("alice@example.com")
+\`\`\`
+
+Fixtures can have **scope** to control how often they run:
+
+| Scope | Fixture runs |
+|-------|-------------|
+| \`function\` (default) | Once per test |
+| \`class\` | Once per test class |
+| \`module\` | Once per test file |
+| \`session\` | Once for the entire test run |
+
+### Parametrize — one test, many inputs
+
+Instead of writing five nearly identical tests, parametrize them:
+
+\`\`\`python
+@pytest.mark.parametrize("text, expected", [
+    ("hello world", "hello-world"),
+    ("Python 3.11", "python-3.11"),
+    ("  Trim me  ", "trim-me"),
+    ("already-fine", "already-fine"),
+])
+def test_slugify(text, expected):
+    assert slugify(text) == expected
+\`\`\`
+
+This runs four separate tests and reports each independently.
+
+### Mocking — isolate the code under test
+
+Mocks replace real dependencies (HTTP calls, databases, email sending) with controlled stand-ins:
+
+\`\`\`python
+from unittest.mock import patch, MagicMock
+
+def test_send_welcome_email():
+    with patch("myapp.mailer.smtp_send") as mock_send:
+        mock_send.return_value = {"status": "sent"}
+
+        result = send_welcome_email("alice@example.com")
+
+        assert result is True
+        mock_send.assert_called_once_with(
+            to="alice@example.com",
+            subject="Welcome to the app!"
+        )
+\`\`\`
+
+### Test coverage
+
+Coverage measures which lines of code are actually executed by your tests:
+
+\`\`\`bash
+pytest --cov=myapp --cov-report=term-missing
+# Shows which lines are NOT covered in the terminal
+
+pytest --cov=myapp --cov-report=html
+# Generates htmlcov/index.html — click through files to see uncovered lines
+\`\`\`
+
+Aim for coverage on your **business logic**. Don't chase 100% — covering every possible exception path is often not worth the cost.
+
+### conftest.py — shared fixtures
+
+Put fixtures used across multiple test files in a \`conftest.py\` at the directory level. pytest finds them automatically:
+
+\`\`\`python
+# tests/conftest.py
+import pytest
+from myapp import create_app, db as _db
+
+@pytest.fixture(scope="session")
+def app():
+    return create_app(testing=True)
+
+@pytest.fixture(scope="function")
+def db(app):
+    with app.app_context():
+        _db.create_all()
+        yield _db
+        _db.drop_all()
 \`\`\``,
   },
   {
-    slug: "comprehensions-functional",
-    title: "Comprehensions & Functional Tools",
-    description: "map, filter, reduce, zip, sorted, functools.lru_cache, and partial.",
+    slug: "python-performance",
+    title: "Performance & Best Practices",
+    description: "Profiling, common pitfalls, idiomatic Python, and writing code that is fast and readable.",
     category: "python",
-    content: `## Comprehensions & Functional Tools
+    content: `## Performance & Best Practices
 
-### List / dict / set comprehensions (recap)
+### Measure before optimising
 
-\`\`\`python
-# List
-evens  = [x for x in range(20) if x % 2 == 0]
-matrix = [[r * c for c in range(5)] for r in range(5)]
+Never guess where the bottleneck is — profile first. Optimising the wrong code wastes time and creates complexity for no gain.
 
-# Dict
-lengths = {word: len(word) for word in ["hello", "world"]}
+\`\`\`bash
+# cProfile — find which functions consume the most time
+python -m cProfile -s cumulative my_script.py | head -20
 
-# Set
-unique_domains = {email.split("@")[1] for email in emails}
+# timeit — micro-benchmark specific snippets
+python -m timeit "'-'.join(str(i) for i in range(1000))"
 \`\`\`
 
-### map and filter
-
 \`\`\`python
-names = ["alice", "bob", "carol"]
+import timeit
 
-# map — apply function to every element
-upper = list(map(str.upper, names))      # ['ALICE', 'BOB', 'CAROL']
+# Compare two implementations
+def approach_a():
+    return "".join([str(i) for i in range(1000)])
 
-# filter — keep elements where function returns True
-long_names = list(filter(lambda n: len(n) > 3, names))  # ['alice', 'carol']
+def approach_b():
+    return "".join(str(i) for i in range(1000))
+
+print(timeit.timeit(approach_a, number=10_000))
+print(timeit.timeit(approach_b, number=10_000))
 \`\`\`
 
-Comprehensions are usually more Pythonic than map/filter.
+### String building — always use join
 
-### zip and unzip
+Building strings with \`+\` in a loop creates a new string every iteration — O(n²) memory and time:
 
 \`\`\`python
-names  = ["Alice", "Bob", "Carol"]
-scores = [85, 92, 78]
+# Slow — O(n²): each iteration allocates a new string
+result = ""
+for word in words:
+    result += word + " "
 
-pairs = list(zip(names, scores))
-# [('Alice', 85), ('Bob', 92), ('Carol', 78)]
+# Fast — O(n): one allocation at the end
+result = " ".join(words)
 
-# Unzip
-names2, scores2 = zip(*pairs)
-
-# zip_longest (from itertools) — pads shorter iterables
-from itertools import zip_longest
-list(zip_longest([1,2,3], [4,5], fillvalue=0))
-# [(1,4), (2,5), (3,0)]
+# Fast for complex cases — collect in list, join at end
+parts = []
+for item in data:
+    parts.append(format_item(item))
+output = "\\n".join(parts)
 \`\`\`
 
-### sorted with key
+### Use sets and dicts for membership testing
+
+A list's \`in\` operator scans every element — O(n). A set's \`in\` uses a hash table — O(1):
 
 \`\`\`python
-users = [{"name": "Carol", "age": 22}, {"name": "Alice", "age": 30}]
+# Slow: scanned every time
+valid_roles = ["admin", "member", "moderator", "guest"]
+if user.role in valid_roles:   ...
 
-sorted_by_age  = sorted(users, key=lambda u: u["age"])
-sorted_by_name = sorted(users, key=lambda u: u["name"])
-
-# Sort by multiple fields
-sorted(users, key=lambda u: (u["age"], u["name"]))
+# Fast: O(1) lookup
+VALID_ROLES = {"admin", "member", "moderator", "guest"}
+if user.role in VALID_ROLES:   ...
 \`\`\`
 
-### functools
+### Generators for large data
+
+If you only iterate once, a generator uses a tiny amount of memory compared to a list:
 
 \`\`\`python
-from functools import reduce, lru_cache, partial
+# Builds 1 million items in memory
+big_list = [process(x) for x in range(1_000_000)]
+total = sum(big_list)
 
-# reduce — fold a list into a single value
-product = reduce(lambda acc, x: acc * x, [1, 2, 3, 4, 5])  # 120
+# Memory-efficient: processes one item at a time
+total = sum(process(x) for x in range(1_000_000))
+\`\`\`
 
-# lru_cache — memoize expensive pure functions
+### lru_cache — memoize pure functions
+
+Cache the results of expensive function calls that always return the same output for the same input:
+
+\`\`\`python
+from functools import lru_cache
+
 @lru_cache(maxsize=None)
 def fib(n: int) -> int:
     if n < 2:
         return n
     return fib(n - 1) + fib(n - 2)
 
-fib(100)   # fast — results cached
-
-# partial — fix some arguments of a function
-from functools import partial
-def power(base, exp):
-    return base ** exp
-
-square = partial(power, exp=2)
-cube   = partial(power, exp=3)
-square(5)   # 25
-cube(3)     # 27
+fib(100)   # instant — all sub-results cached
 \`\`\`
 
-### any / all
+### \`__slots__\` — reduce memory for many small objects
 
-\`\`\`python
-scores = [85, 92, 78, 95]
-
-any(s > 90 for s in scores)   # True — at least one
-all(s > 70 for s in scores)   # True — every one
-any(s < 0  for s in scores)   # False
-\`\`\``,
-  },
-  {
-    slug: "async-await",
-    title: "Async & Await",
-    description: "Coroutines, event loops, asyncio.gather, tasks, and async context managers.",
-    category: "python",
-    content: `## Async & Await
-
-Python's async model is **cooperative concurrency** — tasks yield control at \`await\` points. It excels at I/O-bound work (HTTP, database queries, file I/O) but does not parallelize CPU-bound work.
-
-### Coroutines
-
-A coroutine is a function defined with \`async def\`. It doesn't run immediately — you need to \`await\` it or schedule it.
-
-\`\`\`python
-import asyncio
-
-async def greet(name: str) -> str:
-    await asyncio.sleep(1)   # simulates I/O wait
-    return f"Hello, {name}!"
-
-# Run it
-asyncio.run(greet("Alice"))  # "Hello, Alice!"
-\`\`\`
-
-### Concurrent tasks with gather
-
-\`\`\`python
-async def fetch(url: str) -> str:
-    await asyncio.sleep(0.5)   # simulate network latency
-    return f"data:{url}"
-
-async def main():
-    # Both run concurrently — total time ~0.5s, not 1s
-    results = await asyncio.gather(
-        fetch("https://api.example.com/users"),
-        fetch("https://api.example.com/posts"),
-    )
-    print(results)
-
-asyncio.run(main())
-\`\`\`
-
-### Creating tasks
-
-\`\`\`python
-async def main():
-    task1 = asyncio.create_task(fetch("url1"))
-    task2 = asyncio.create_task(fetch("url2"))
-    # Tasks start running immediately (unlike await)
-    r1 = await task1
-    r2 = await task2
-\`\`\`
-
-### Async context managers
-
-\`\`\`python
-async with aiohttp.ClientSession() as session:
-    async with session.get(url) as response:
-        data = await response.json()
-\`\`\`
-
-### Async iterators
-
-\`\`\`python
-async def stream_lines(filepath: str):
-    async with aiofiles.open(filepath) as f:
-        async for line in f:
-            yield line.strip()
-
-async def main():
-    async for line in stream_lines("data.txt"):
-        print(line)
-\`\`\`
-
-### Real HTTP example with httpx
-
-\`\`\`python
-import asyncio
-import httpx
-
-async def fetch_all(urls: list[str]) -> list[dict]:
-    async with httpx.AsyncClient() as client:
-        tasks = [client.get(url) for url in urls]
-        responses = await asyncio.gather(*tasks)
-        return [r.json() for r in responses]
-
-urls = [
-    "https://jsonplaceholder.typicode.com/posts/1",
-    "https://jsonplaceholder.typicode.com/posts/2",
-]
-results = asyncio.run(fetch_all(urls))
-\`\`\`
-
-### Async vs threading vs multiprocessing
-
-| Use case | Best tool |
-|----------|-----------|
-| I/O-bound (HTTP, DB, files) | **asyncio** |
-| I/O-bound + legacy code | threading |
-| CPU-bound (compute, parsing) | **multiprocessing** |
-| CPU-bound + easy API | concurrent.futures ProcessPoolExecutor |`,
-  },
-  {
-    slug: "type-hints",
-    title: "Type Hints & mypy",
-    description: "Annotating functions, generics, Protocol, TypedDict, Literal, and running mypy.",
-    category: "python",
-    content: `## Type Hints & mypy
-
-Type hints document intent and enable static analysis. They are **not enforced at runtime** — use mypy or pyright to check them.
-
-### Function annotations
-
-\`\`\`python
-def add(a: int, b: int) -> int:
-    return a + b
-
-def greet(name: str, excited: bool = False) -> str:
-    return f"Hello, {name}{'!' if excited else '.'}"
-\`\`\`
-
-### Common types
-
-\`\`\`python
-from typing import Optional, Union, Any
-
-x: Optional[str] = None        # str or None
-y: Union[int, str] = 42        # int or str
-
-# Python 3.10+ shorthand
-x: str | None = None
-y: int | str = 42
-\`\`\`
-
-### Collection types
-
-\`\`\`python
-from typing import List, Dict, Tuple, Set  # old style (< 3.9)
-
-# Python 3.9+ — use built-in generics directly
-def process(items: list[int]) -> dict[str, int]:
-    ...
-
-def pair(a: int, b: str) -> tuple[int, str]:
-    return a, b
-\`\`\`
-
-### Callable and TypeVar
-
-\`\`\`python
-from typing import Callable, TypeVar
-
-T = TypeVar("T")
-
-def apply(func: Callable[[int], int], value: int) -> int:
-    return func(value)
-
-def identity(x: T) -> T:    # generic function
-    return x
-\`\`\`
-
-### TypedDict
-
-\`\`\`python
-from typing import TypedDict
-
-class User(TypedDict):
-    name: str
-    email: str
-    age: int
-
-def create_user(data: User) -> None:
-    ...
-
-create_user({"name": "Alice", "email": "alice@example.com", "age": 30})
-\`\`\`
-
-### Protocol (structural subtyping)
-
-\`\`\`python
-from typing import Protocol
-
-class Drawable(Protocol):
-    def draw(self) -> None: ...
-
-class Circle:
-    def draw(self) -> None:
-        print("Drawing circle")
-
-def render(shape: Drawable) -> None:
-    shape.draw()
-
-render(Circle())   # works — Circle matches the Protocol structurally
-\`\`\`
-
-### Literal
-
-\`\`\`python
-from typing import Literal
-
-def set_direction(d: Literal["left", "right", "up", "down"]) -> None:
-    ...
-\`\`\`
-
-### Running mypy
-
-\`\`\`bash
-pip install mypy
-mypy src/                   # check all files in src/
-mypy --strict main.py       # strictest mode
-\`\`\``,
-  },
-  {
-    slug: "testing",
-    title: "Testing with pytest",
-    description: "Writing tests, fixtures, parametrize, mocking, and measuring coverage.",
-    category: "python",
-    content: `## Testing with pytest
-
-pytest is the standard Python testing library — cleaner than unittest and highly extensible.
-
-\`\`\`bash
-pip install pytest pytest-cov
-pytest                   # run all tests
-pytest tests/test_user.py
-pytest -v                # verbose
-pytest -k "test_login"  # run tests matching name
-\`\`\`
-
-### Basic tests
-
-\`\`\`python
-# tests/test_math.py
-def add(a, b):
-    return a + b
-
-def test_add():
-    assert add(2, 3) == 5
-
-def test_add_negatives():
-    assert add(-1, -1) == -2
-
-def test_add_zero():
-    assert add(0, 5) == 5
-\`\`\`
-
-### Testing exceptions
-
-\`\`\`python
-import pytest
-
-def divide(a, b):
-    if b == 0:
-        raise ZeroDivisionError("Cannot divide by zero")
-    return a / b
-
-def test_divide_by_zero():
-    with pytest.raises(ZeroDivisionError, match="Cannot divide by zero"):
-        divide(10, 0)
-\`\`\`
-
-### Fixtures — reusable setup
-
-\`\`\`python
-import pytest
-from myapp.db import Database
-
-@pytest.fixture
-def db():
-    database = Database(":memory:")
-    database.migrate()
-    yield database          # teardown after test
-    database.close()
-
-def test_create_user(db):
-    user = db.create_user("alice@example.com")
-    assert user.id is not None
-
-def test_find_user(db):
-    db.create_user("bob@example.com")
-    user = db.find_by_email("bob@example.com")
-    assert user.email == "bob@example.com"
-\`\`\`
-
-### Parametrize — run one test with many inputs
-
-\`\`\`python
-@pytest.mark.parametrize("input,expected", [
-    ("hello world", "hello-world"),
-    ("Python 3.11", "python-3.11"),
-    ("  spaces  ", "spaces"),
-])
-def test_slugify(input, expected):
-    assert slugify(input) == expected
-\`\`\`
-
-### Mocking
-
-\`\`\`python
-from unittest.mock import patch, MagicMock
-
-def test_send_email():
-    with patch("myapp.mailer.smtp_send") as mock_send:
-        mock_send.return_value = True
-        result = send_welcome_email("alice@example.com")
-        assert result is True
-        mock_send.assert_called_once_with(
-            to="alice@example.com",
-            subject="Welcome!"
-        )
-\`\`\`
-
-### Coverage
-
-\`\`\`bash
-pytest --cov=myapp --cov-report=html
-# Opens htmlcov/index.html — shows which lines are untested
-\`\`\`
-
-### conftest.py
-
-Shared fixtures go in \`conftest.py\` — pytest discovers them automatically across the test directory.
-
-\`\`\`python
-# tests/conftest.py
-import pytest
-from myapp import create_app
-
-@pytest.fixture(scope="session")
-def app():
-    return create_app(testing=True)
-\`\`\``,
-  },
-  {
-    slug: "python-performance",
-    title: "Performance & Best Practices",
-    description: "Profiling, common pitfalls, slots, lru_cache, and writing idiomatic Python.",
-    category: "python",
-    content: `## Performance & Best Practices
-
-### Profiling — find the bottleneck first
-
-\`\`\`python
-# cProfile — where does time go?
-python -m cProfile -s cumulative script.py
-
-# timeit — micro-benchmark a snippet
-python -m timeit "'-'.join(str(i) for i in range(1000))"
-
-# In code
-import timeit
-t = timeit.timeit(lambda: sum(range(10000)), number=1000)
-print(f"{t:.4f}s")
-\`\`\`
-
-### String concatenation — use join, not +
-
-\`\`\`python
-# Slow — creates a new string each iteration O(n²)
-result = ""
-for word in words:
-    result += word + " "
-
-# Fast — single allocation O(n)
-result = " ".join(words)
-\`\`\`
-
-### Local variable lookups are faster
-
-\`\`\`python
-# In a hot loop, cache global/attribute lookups
-append = result.append    # local reference
-for item in big_list:
-    append(item)          # faster than result.append(item)
-\`\`\`
-
-### Use generators for large data
-
-\`\`\`python
-# Loads all 1M lines into memory
-lines = [line.strip() for line in open("big.txt")]
-
-# Processes one line at a time
-lines = (line.strip() for line in open("big.txt"))
-\`\`\`
-
-### \`__slots__\` — reduce memory for many instances
+By default, every Python object has a \`__dict__\` which is a hash table. For classes with fixed attributes that you'll create millions of, \`__slots__\` removes \`__dict__\` and uses a compact array instead:
 
 \`\`\`python
 class Point:
-    __slots__ = ("x", "y")    # no __dict__ per instance
-    def __init__(self, x, y):
+    __slots__ = ("x", "y")
+
+    def __init__(self, x: float, y: float):
         self.x = x
         self.y = y
 
-# 10M Point objects → ~40% less memory than without __slots__
-\`\`\`
-
-### lru_cache for expensive pure functions
-
-\`\`\`python
-from functools import lru_cache
-
-@lru_cache(maxsize=256)
-def expensive_compute(n: int) -> int:
-    ...  # result cached by argument value
+# ~50% less memory per instance than without __slots__
 \`\`\`
 
 ### Common pitfalls
 
-| Pitfall | Fix |
-|---------|-----|
-| Mutable default argument | Use \`None\` and set inside function |
-| Catching bare \`except:\` | Always catch specific exceptions |
-| \`==\` for None/True/False | Use \`is None\`, \`is True\` |
-| Modifying list while iterating | Iterate a copy or build a new list |
-| N+1 queries in ORM loops | Use \`select_related\` / \`prefetch_related\` |
+| Pitfall | What goes wrong | Fix |
+|---------|----------------|-----|
+| Mutable default argument | State shared across calls | Use \`None\`, set inside function |
+| \`except:\` with no type | Catches SystemExit, KeyboardInterrupt | Always name the exception |
+| \`==\` for None/True/False | Slower and less correct | Use \`is None\`, \`is True\` |
+| Modifying a list while iterating it | Skip items or IndexError | Iterate a copy: \`for x in lst[:]\` |
+| Using \`+\` to build strings in loops | O(n²) time and memory | Use \`"".join(parts)\` |
+| Missing \`with\` for file opens | File not closed on exception | Always use \`with open(...)\` |
 
-### Idiomatic Python (Pythonic)
+### Idiomatic Python — write it the Pythonic way
 
 \`\`\`python
-# Swap variables
+# Swap two variables
 a, b = b, a
 
-# Check empty
-if not my_list: ...       # not: if len(my_list) == 0
+# Check empty collections
+if not my_list:   ...       # instead of: if len(my_list) == 0
+if my_dict:       ...       # instead of: if len(my_dict) > 0
 
-# Enumerate instead of range+index
-for i, item in enumerate(items): ...
+# Use enumerate instead of range+index
+for i, item in enumerate(items):
+    ...
 
-# Dictionary get with default
-name = d.get("name", "Unknown")
+# Safe dict access with default
+name = data.get("name", "Unknown")
 
-# Conditional import
-try:
-    import ujson as json
-except ImportError:
-    import json
+# Unpack function returns
+x, y = get_coordinates()
+first, *rest = get_items()
 
-# Unpack in assignment
-first, *middle, last = range(10)
+# One-line conditional assignment
+value = a if condition else b
 
-# Context manager for any cleanup
-with open(f) as file, lock:
+# Check multiple conditions cleanly
+if status in {"pending", "processing", "waiting"}:
     ...
 \`\`\``,
   },
