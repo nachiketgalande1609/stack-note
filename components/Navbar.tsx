@@ -147,6 +147,7 @@ export default function Navbar({ onMenuClick, showMenuBtn, chatOpen, onChatToggl
           onClick={onSearchOpen}
           className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition-colors"
           style={{
+            width: 220,
             background: "var(--bg-surface)",
             borderColor: "var(--border)",
             color: "var(--text-secondary)",
@@ -155,7 +156,7 @@ export default function Navbar({ onMenuClick, showMenuBtn, chatOpen, onChatToggl
           onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; }}
         >
           <Search size={12} />
-          <span className="hidden md:inline text-xs">Search…</span>
+          <span className="text-xs">Search…</span>
         </button>
 
         <button

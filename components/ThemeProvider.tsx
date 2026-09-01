@@ -9,18 +9,18 @@ interface ThemeCtx {
   toggle: () => void;
 }
 
-const ThemeContext = createContext<ThemeCtx>({ theme: "dark", toggle: () => {} });
+const ThemeContext = createContext<ThemeCtx>({ theme: "light", toggle: () => {} });
 
 export function useTheme() {
   return useContext(ThemeContext);
 }
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
+  const [theme, setTheme] = useState<Theme>("light");
 
   useEffect(() => {
     const saved = localStorage.getItem("sn-theme") as Theme | null;
-    const pref = saved ?? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+    const pref = saved ?? "light";
     setTheme(pref);
     document.documentElement.setAttribute("data-theme", pref);
   }, []);
