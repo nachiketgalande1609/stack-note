@@ -1,12 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { Cpu, Code2, FileCode, Layers, Database, Zap, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { SiPython, SiJavascript, SiReact, SiMysql, SiFastapi } from "react-icons/si";
+import { TbBrain } from "react-icons/tb";
 import { categories } from "../data/categories";
 import { allNotes } from "../data";
 
 const iconMap: Record<string, React.ElementType> = {
-  Cpu, Code2, FileCode, Layers, Database, Zap,
+  ai:         TbBrain,
+  python:     SiPython,
+  javascript: SiJavascript,
+  react:      SiReact,
+  mysql:      SiMysql,
+  fastapi:    SiFastapi,
+};
+
+// Official brand colours shown inside the icon badge
+const iconColour: Record<string, string> = {
+  ai:         "#a78bfa",   // purple-ish for AI/brain
+  python:     "#3b82f6",   // Python blue
+  javascript: "#eab308",   // JS yellow
+  react:      "#38bdf8",   // React cyan
+  mysql:      "#f97316",   // MySQL orange
+  fastapi:    "#22c55e",   // FastAPI green
 };
 
 export default function CategoryCards() {
@@ -14,6 +31,7 @@ export default function CategoryCards() {
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
       {categories.map((cat) => {
         const Icon = iconMap[cat.icon];
+        const colour = iconColour[cat.icon] ?? "var(--accent-1)";
         const noteCount = allNotes.filter((n) => n.category === cat.slug).length;
 
         return (
@@ -23,12 +41,12 @@ export default function CategoryCards() {
             className="group category-card block rounded-xl p-5 border"
             style={{ background: "var(--bg-surface)", borderColor: "var(--border)" }}
           >
-            {/* Icon */}
+            {/* Icon badge */}
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center mb-4 border"
               style={{ background: "var(--bg-surface-2)", borderColor: "var(--border)" }}
             >
-              <Icon size={16} style={{ color: "var(--accent-1)" }} />
+              <Icon size={18} style={{ color: colour }} />
             </div>
 
             {/* Label */}
@@ -46,10 +64,7 @@ export default function CategoryCards() {
 
             {/* Footer */}
             <div className="flex items-center justify-between">
-              <span
-                className="text-xs font-mono"
-                style={{ color: "var(--text-muted)" }}
-              >
+              <span className="text-xs font-mono" style={{ color: "var(--text-muted)" }}>
                 {String(noteCount).padStart(2, "0")} notes
               </span>
               <ArrowRight

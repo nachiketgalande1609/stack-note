@@ -2,12 +2,28 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { Terminal, ChevronDown, Search, Sun, Moon, Cpu, Code2, FileCode, Layers, Database, MessageSquare, Zap } from "lucide-react";
+import { Terminal, ChevronDown, Search, Sun, Moon, MessageSquare } from "lucide-react";
+import { SiPython, SiJavascript, SiReact, SiMysql, SiFastapi } from "react-icons/si";
+import { TbBrain } from "react-icons/tb";
 import { useTheme } from "./ThemeProvider";
 import { categories } from "../data/categories";
 
 const iconMap: Record<string, React.ElementType> = {
-  Cpu, Code2, FileCode, Layers, Database, Zap,
+  ai:         TbBrain,
+  python:     SiPython,
+  javascript: SiJavascript,
+  react:      SiReact,
+  mysql:      SiMysql,
+  fastapi:    SiFastapi,
+};
+
+const iconColour: Record<string, string> = {
+  ai:         "#a78bfa",
+  python:     "#3b82f6",
+  javascript: "#eab308",
+  react:      "#38bdf8",
+  mysql:      "#f97316",
+  fastapi:    "#22c55e",
 };
 
 interface NavbarProps {
@@ -111,6 +127,7 @@ export default function Navbar({ onMenuClick, showMenuBtn, chatOpen, onChatToggl
           >
             {categories.map((cat, i) => {
               const Icon = iconMap[cat.icon];
+              const colour = iconColour[cat.icon] ?? "var(--accent-1)";
               return (
                 <Link
                   key={cat.slug}
@@ -129,7 +146,7 @@ export default function Navbar({ onMenuClick, showMenuBtn, chatOpen, onChatToggl
                     style={{ color: "var(--text-muted)" }}>
                     {String(i + 1).padStart(2, "0")}
                   </span>
-                  <Icon size={13} style={{ color: "var(--accent-1)", flexShrink: 0 }} />
+                  <Icon size={13} style={{ color: colour, flexShrink: 0 }} />
                   <span style={{ color: "var(--text-primary)", fontWeight: 500 }}>{cat.label}</span>
                 </Link>
               );
