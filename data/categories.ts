@@ -44,4 +44,11 @@ export const categories: Category[] = [
     icon: "Database",
     color: "teal",
   },
+  {
+    slug: "fastapi",
+    label: "FastAPI",
+    description: "Building high-performance Python APIs with FastAPI, Pydantic, and async patterns",
+    icon: "Zap",
+    color: "green",
+  },
 ];

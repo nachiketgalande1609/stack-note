@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { Terminal, ChevronDown, Search, Sun, Moon, Cpu, Code2, FileCode, Layers, Database, MessageSquare } from "lucide-react";
+import { Terminal, ChevronDown, Search, Sun, Moon, Cpu, Code2, FileCode, Layers, Database, MessageSquare, Zap } from "lucide-react";
 import { useTheme } from "./ThemeProvider";
 import { categories } from "../data/categories";
 
 const iconMap: Record<string, React.ElementType> = {
-  Cpu, Code2, FileCode, Layers, Database,
+  Cpu, Code2, FileCode, Layers, Database, Zap,
 };
 
 interface NavbarProps {

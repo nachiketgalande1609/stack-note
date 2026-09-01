@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Cpu, Code2, FileCode, Layers, Database, ArrowRight } from "lucide-react";
+import { Cpu, Code2, FileCode, Layers, Database, Zap, ArrowRight } from "lucide-react";
 import { categories } from "../data/categories";
 import { allNotes } from "../data";
 
 const iconMap: Record<string, React.ElementType> = {
-  Cpu, Code2, FileCode, Layers, Database,
+  Cpu, Code2, FileCode, Layers, Database, Zap,
 };
 
 export default function CategoryCards() {
