@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { X, Send, Bot, RotateCcw } from "lucide-react";
+import { X, Send, Bot, RotateCcw, ChevronLeft, ChevronRight, Maximize, Minimize } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 interface Message {
@@ -12,9 +12,14 @@ interface Message {
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  maximized: boolean;
+  onMaximize: () => void;
+  fullScreen: boolean;
+  onFullScreen: () => void;
 }
 
-const PANEL_WIDTH = 360;
+export const PANEL_WIDTH = 360;
+export const PANEL_WIDTH_MAX = 600;
 
 function MessageBubble({ msg }: { msg: Message }) {
   const isUser = msg.role === "user";
@@ -80,7 +85,8 @@ function MessageBubble({ msg }: { msg: Message }) {
   );
 }
 
-export default function ChatDrawer({ isOpen, onClose }: Props) {
+export default function ChatDrawer({ isOpen, onClose, maximized, onMaximize, fullScreen, onFullScreen }: Props) {
+  const panelWidth = maximized ? PANEL_WIDTH_MAX : PANEL_WIDTH;
   const pathname = usePathname();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -124,15 +130,16 @@ export default function ChatDrawer({ isOpen, onClose }: Props) {
   }, [input, loading, messages, category]);
 
   return (
-    /* Fixed right panel — main content gets paddingRight applied by SiteLayout */
     <div
-      className="fixed top-14 right-0 bottom-0 z-30 flex flex-col border-l"
+      className="fixed top-14 bottom-0 flex flex-col border-l"
       style={{
-        width: PANEL_WIDTH,
+        zIndex: fullScreen ? 50 : 30,
+        right: 0,
+        width: fullScreen ? "100vw" : panelWidth,
         background: "var(--bg-surface)",
         borderColor: "var(--border)",
         transform: isOpen ? "translateX(0)" : "translateX(100%)",
-        transition: "transform 260ms cubic-bezier(0.4,0,0.2,1)",
+        transition: "transform 260ms cubic-bezier(0.4,0,0.2,1), width 300ms cubic-bezier(0.4,0,0.2,1)",
       }}
     >
       {/* Header */}
@@ -154,13 +161,32 @@ export default function ChatDrawer({ isOpen, onClose }: Props) {
           {messages.length > 0 && (
             <button onClick={() => setMessages([])}
               className="w-7 h-7 flex items-center justify-center rounded-md hover:opacity-60 transition-opacity"
-              style={{ color: "var(--text-secondary)" }}>
+              style={{ color: "var(--text-secondary)" }}
+              title="Clear conversation">
               <RotateCcw size={12} />
+            </button>
+          )}
+          <button onClick={onFullScreen}
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:opacity-60 transition-opacity"
+            style={{ color: "var(--text-secondary)" }}
+            title={fullScreen ? "Exit full screen" : "Full screen"}>
+            {fullScreen ? <Minimize size={12} /> : <Maximize size={12} />}
+          </button>
+          {!fullScreen && (
+            <button onClick={onMaximize}
+              className="w-7 h-7 flex items-center justify-center rounded-md hover:opacity-60 transition-opacity"
+              style={{ color: "var(--text-secondary)" }}
+              title={maximized ? "Collapse panel" : "Expand panel"}>
+              {maximized
+                ? <span className="flex items-center" style={{ gap: 0 }}><ChevronRight size={12} strokeWidth={2.5} /><ChevronLeft size={12} strokeWidth={2.5} /></span>
+                : <span className="flex items-center" style={{ gap: 0 }}><ChevronLeft size={12} strokeWidth={2.5} /><ChevronRight size={12} strokeWidth={2.5} /></span>
+              }
             </button>
           )}
           <button onClick={onClose}
             className="w-7 h-7 flex items-center justify-center rounded-md hover:opacity-60 transition-opacity"
-            style={{ color: "var(--text-secondary)" }}>
+            style={{ color: "var(--text-secondary)" }}
+            title="Close">
             <X size={14} />
           </button>
         </div>
@@ -198,10 +224,13 @@ export default function ChatDrawer({ isOpen, onClose }: Props) {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input — minimal */}
-      <div className="px-3 pb-3 pt-2 flex-shrink-0 border-t" style={{ borderColor: "var(--border)" }}>
-        <div className="flex items-center gap-2 rounded-lg border px-3 py-2"
-          style={{ background: "var(--bg-surface-2)", borderColor: "var(--border-strong)" }}>
+      {/* Input */}
+      <div className="px-4 pb-4 pt-3 flex-shrink-0">
+        <div className="flex items-center gap-2 rounded-xl border px-3 py-2"
+          style={{
+            background: "var(--bg-surface)",
+            borderColor: "var(--border)",
+          }}>
           <input
             ref={inputRef}
             type="text"
@@ -215,13 +244,14 @@ export default function ChatDrawer({ isOpen, onClose }: Props) {
           <button
             onClick={send}
             disabled={!input.trim() || loading}
-            className="flex items-center justify-center w-7 h-7 rounded-md flex-shrink-0 transition-opacity"
+            className="flex items-center justify-center w-6 h-6 flex-shrink-0 transition-all"
             style={{
               background: input.trim() && !loading ? "var(--accent-1)" : "transparent",
-              opacity: input.trim() && !loading ? 1 : 0.35,
+              opacity: input.trim() && !loading ? 1 : 0.3,
+              borderRadius: 6,
             }}
           >
-            <Send size={13} style={{ color: input.trim() && !loading ? "var(--accent-icon-text)" : "var(--text-secondary)" }} />
+            <Send size={11} style={{ color: input.trim() && !loading ? "var(--accent-icon-text)" : "var(--text-secondary)" }} />
           </button>
         </div>
       </div>
@@ -229,4 +259,3 @@ export default function ChatDrawer({ isOpen, onClose }: Props) {
   );
 }
 
-export { PANEL_WIDTH };
