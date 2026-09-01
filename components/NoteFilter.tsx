@@ -123,11 +123,15 @@ export default function NoteFilter({ notes }: { notes: Note[] }) {
                   style={{ background: "linear-gradient(90deg,var(--border-strong),transparent)" }} />
 
                 <MarkdownContent content={note.content.replace(/^##\s+[^\n]+\n?/, "")} highlight={query} />
-                <CommentBox slug={note.slug} />
               </div>
             );
           })
         )}
+      </div>
+
+      {/* Page-level comment box */}
+      <div className="mt-8">
+        <CommentBox slug={notes[0]?.category ?? "general"} />
       </div>
     </>
   );
