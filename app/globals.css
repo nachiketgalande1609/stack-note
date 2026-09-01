@@ -30,7 +30,6 @@
 /* ─────────────────────────────────────
    LIGHT (default) — pure achromatic
 ───────────────────────────────────── */
-:root,
 [data-theme="light"] {
   --bg-base:        #F7F7F7;
   --bg-surface:     #FFFFFF;
