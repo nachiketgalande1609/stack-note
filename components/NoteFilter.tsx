@@ -30,9 +30,9 @@ function TBtn({ onClick, title, children }: { onClick: () => void; title: string
       onClick={onClick}
       title={title}
       className="flex items-center justify-center w-5 h-5 rounded flex-shrink-0 transition-colors"
-      style={{ color: "var(--text-muted)", background: "transparent" }}
+      style={{ color: "var(--text-secondary)", background: "transparent" }}
       onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg-surface-2)"; (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"; }}
-      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)"; }}
     >
       {children}
     </button>
@@ -40,7 +40,7 @@ function TBtn({ onClick, title, children }: { onClick: () => void; title: string
 }
 
 function TDivider() {
-  return <span className="w-px h-3 mx-0.5 flex-shrink-0" style={{ background: "var(--border)" }} />;
+  return <span className="w-px h-3.5 mx-1 flex-shrink-0" style={{ background: "var(--border-strong)" }} />;
 }
 
 function useNotesEditor(noteSlug: string) {
@@ -249,7 +249,7 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
           {/* Toolbar row — directly below title bar */}
           <div
             className="flex items-center gap-0.5 px-2 py-1 border-b flex-shrink-0"
-            style={{ borderColor: "var(--border)", background: "var(--bg-surface-2)" }}
+            style={{ borderColor: "var(--border)", background: "var(--bg-surface)" }}
           >
             <EditorToolbar applyFormat={applyFormat} saved={false} />
           </div>
