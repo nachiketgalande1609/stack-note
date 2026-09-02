@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await getSupabase()
     .from("comments")
-    .select("id, content, created_at")
+    .select("id, content, user_name, created_at")
     .eq("note_slug", slug)
     .order("created_at", { ascending: true });
 
@@ -16,8 +16,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json() as { slug?: string; content?: string };
-  const { slug, content } = body;
+  const body = await req.json() as { slug?: string; content?: string; user_name?: string | null };
+  const { slug, content, user_name } = body;
 
   if (!slug || !content?.trim()) {
     return NextResponse.json({ error: "Missing slug or content" }, { status: 400 });
@@ -27,9 +27,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Comment too long (max 1000 chars)" }, { status: 400 });
   }
 
+  const row: Record<string, string | null> = { note_slug: slug, content: content.trim() };
+  if (user_name) row.user_name = user_name;
+
   const { data, error } = await getSupabase()
     .from("comments")
-    .insert({ note_slug: slug, content: content.trim() })
+    .insert(row)
     .select()
     .single();
 

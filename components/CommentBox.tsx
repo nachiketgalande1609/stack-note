@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { MessageSquare, Send, Loader2 } from "lucide-react";
+import { useAuth, getUserDisplayName } from "./AuthProvider";
 
 interface Comment {
   id: string;
   content: string;
+  user_name: string | null;
   created_at: string;
 }
 
@@ -22,6 +25,7 @@ function timeAgo(iso: string): string {
 }
 
 export default function CommentBox({ slug }: { slug: string }) {
+  const { user } = useAuth();
   const [comments, setComments]   = useState<Comment[]>([]);
   const [loading, setLoading]     = useState(true);
   const [text, setText]           = useState("");
@@ -48,10 +52,11 @@ export default function CommentBox({ slug }: { slug: string }) {
     setSubmitting(true);
     setError("");
     try {
+      const user_name = user ? getUserDisplayName(user) : null;
       const res = await fetch("/api/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, content: text.trim() }),
+        body: JSON.stringify({ slug, content: text.trim(), user_name }),
       });
       if (!res.ok) {
         const e = await res.json() as { error: string };
@@ -106,7 +111,7 @@ export default function CommentBox({ slug }: { slug: string }) {
             >
               <p style={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{c.content}</p>
               <span className="text-xs mt-2 block" style={{ color: "var(--text-muted)" }}>
-                Anonymous · {timeAgo(c.created_at)}
+                {c.user_name ?? "Anonymous"} · {timeAgo(c.created_at)}
               </span>
             </div>
           ))}
@@ -114,6 +119,15 @@ export default function CommentBox({ slug }: { slug: string }) {
       ) : (
         <p className="text-xs mb-5" style={{ color: "var(--text-muted)" }}>
           No suggestions yet — be the first to leave one.
+        </p>
+      )}
+
+      {/* Sign-in prompt for guests */}
+      {!user && (
+        <p className="text-xs mb-4" style={{ color: "var(--text-muted)" }}>
+          <Link href="/auth/login" className="font-medium transition-opacity hover:opacity-70" style={{ color: "var(--accent-1)" }}>
+            Sign in
+          </Link>{" "}to post with your name, or comment anonymously below.
         </p>
       )}
 
@@ -155,7 +169,7 @@ export default function CommentBox({ slug }: { slug: string }) {
           >
             {submitting
               ? <><Loader2 size={11} className="animate-spin" /> Posting…</>
-              : <><Send size={11} /> Post anonymously</>
+              : <><Send size={11} /> {user ? `Post as ${getUserDisplayName(user).split(" ")[0]}` : "Post anonymously"}</>
             }
           </button>
         </div>

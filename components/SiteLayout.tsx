@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import ThemeProvider from "./ThemeProvider";
+import AuthProvider from "./AuthProvider";
 import Navbar from "./Navbar";
 import Sidebar from "./Sidebar";
 import ChatDrawer, { PANEL_WIDTH, PANEL_WIDTH_MAX } from "./ChatDrawer";
@@ -78,8 +79,10 @@ function LayoutInner({ children }: { children: React.ReactNode }) {
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeProvider>
-      <LayoutInner>{children}</LayoutInner>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <LayoutInner>{children}</LayoutInner>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

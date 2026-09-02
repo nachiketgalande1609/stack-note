@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
-import { Terminal, ChevronDown, Search, Sun, Moon, MessageSquare } from "lucide-react";
+import { Terminal, ChevronDown, Search, Sun, Moon, MessageSquare, LogIn, LogOut } from "lucide-react";
 import { SiPython, SiJavascript, SiReact, SiMysql, SiFastapi } from "react-icons/si";
 import { TbBrain } from "react-icons/tb";
 import { useTheme } from "./ThemeProvider";
+import { useAuth, getUserDisplayName, getUserInitials } from "./AuthProvider";
 import { categories } from "../data/categories";
 
 const iconMap: Record<string, React.ElementType> = {
@@ -36,13 +37,19 @@ interface NavbarProps {
 
 export default function Navbar({ onMenuClick, showMenuBtn, chatOpen, onChatToggle, onSearchOpen }: NavbarProps) {
   const { theme, toggle } = useTheme();
+  const { user, loading: authLoading, signOut } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
       }
     }
     document.addEventListener("mousedown", handler);
@@ -158,7 +165,7 @@ export default function Navbar({ onMenuClick, showMenuBtn, chatOpen, onChatToggl
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Right: search + theme toggle */}
+      {/* Right: search + theme toggle + user */}
       <div className="flex items-center gap-2">
         <button
           onClick={onSearchOpen}
@@ -199,6 +206,84 @@ export default function Navbar({ onMenuClick, showMenuBtn, chatOpen, onChatToggl
             ? <Sun size={14} style={{ color: "var(--accent-1)" }} />
             : <Moon size={14} style={{ color: "var(--accent-1)" }} />}
         </button>
+
+        {/* User area */}
+        {!authLoading && (
+          user ? (
+            <div className="relative flex-shrink-0" ref={userMenuRef}>
+              <button
+                onClick={() => setUserMenuOpen((v) => !v)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all"
+                style={{
+                  background: user.user_metadata?.avatar_url
+                    ? "transparent"
+                    : "var(--accent-1)",
+                  color: "var(--accent-icon-text)",
+                  boxShadow: userMenuOpen ? "0 0 0 2px var(--accent-1)" : "none",
+                  overflow: "hidden",
+                  border: "none",
+                }}
+                aria-label="User menu"
+              >
+                {user.user_metadata?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.user_metadata.avatar_url} alt="avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11 }}>
+                    {getUserInitials(user)}
+                  </span>
+                )}
+              </button>
+
+              {userMenuOpen && (
+                <div
+                  className="absolute top-full right-0 mt-2 w-52 rounded-xl border overflow-hidden z-50"
+                  style={{
+                    background: "var(--bg-surface)",
+                    borderColor: "var(--border-strong)",
+                    boxShadow: "0 16px 48px rgba(0,0,0,0.25), 0 0 0 1px var(--border)",
+                  }}
+                >
+                  {/* User info */}
+                  <div className="px-4 py-3 border-b" style={{ borderColor: "var(--border)" }}>
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)", fontFamily: "'Space Grotesk', sans-serif" }}>
+                      {getUserDisplayName(user)}
+                    </p>
+                    <p className="text-xs truncate mt-0.5" style={{ color: "var(--text-muted)" }}>
+                      {user.email}
+                    </p>
+                  </div>
+                  {/* Sign out */}
+                  <button
+                    onClick={async () => { setUserMenuOpen(false); await signOut(); }}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm transition-colors"
+                    style={{ color: "var(--text-secondary)", background: "transparent" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-surface-2)")}
+                    onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
+                  >
+                    <LogOut size={13} style={{ color: "var(--text-muted)" }} />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all border flex-shrink-0"
+              style={{
+                background: "var(--bg-surface)",
+                borderColor: "var(--border)",
+                color: "var(--text-secondary)",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--accent-1)"; (e.currentTarget as HTMLAnchorElement).style.color = "var(--accent-1)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLAnchorElement).style.color = "var(--text-secondary)"; }}
+            >
+              <LogIn size={12} />
+              Sign in
+            </Link>
+          )
+        )}
       </div>
     </header>
   );
