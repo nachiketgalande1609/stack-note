@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen, Maximize2, Minimize2 } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
 import CommentBox from "./CommentBox";
 import type { Note } from "../data/types";
@@ -69,19 +69,28 @@ function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
   );
 }
 
-function NoteRow({ note, originalIndex, query, editorOpen }: { note: Note; originalIndex: number; query: string; editorOpen: boolean }) {
+function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
+  note: Note; originalIndex: number; query: string; editorOpen: boolean; editorExpanded: boolean;
+}) {
+  const cardFlex = !editorOpen ? "1 1 100%" : editorExpanded ? "0 0 0px" : "1 1 50%";
+  const editorFlex = editorExpanded ? "1 1 100%" : "1 1 50%";
 
   return (
     <div id={note.slug} className="flex gap-4 items-start" style={{ scrollMarginTop: "24px" }}>
 
-      {/* Note card — 50% width when editor open, full width when collapsed */}
+      {/* Note card */}
       <div
         className="min-w-0 rounded-2xl border p-8 transition-all duration-200"
         style={{
-          flex: editorOpen ? "1 1 50%" : "1 1 100%",
+          flex: cardFlex,
+          overflow: editorOpen && editorExpanded ? "hidden" : undefined,
+          maxWidth: editorOpen && editorExpanded ? 0 : undefined,
+          padding: editorOpen && editorExpanded ? 0 : undefined,
+          border: editorOpen && editorExpanded ? "none" : undefined,
           background: "var(--bg-surface)",
           borderColor: "var(--border)",
-          boxShadow: "var(--glow)",
+          boxShadow: editorOpen && editorExpanded ? "none" : "var(--glow)",
+          opacity: editorOpen && editorExpanded ? 0 : 1,
         }}
       >
         <div className="flex items-center gap-3 mb-4">
@@ -108,28 +117,49 @@ function NoteRow({ note, originalIndex, query, editorOpen }: { note: Note; origi
         <MarkdownContent content={note.content.replace(/^##\s+[^\n]+\n?/, "")} highlight={query} />
       </div>
 
-      {/* Per-card notes editor — 50% width, collapsible */}
+      {/* Per-card notes editor */}
       {editorOpen && (
         <div
           className="hidden lg:flex flex-col rounded-2xl border transition-all duration-200"
           style={{
-            flex: "1 1 50%",
+            flex: editorFlex,
             minWidth: 0,
             background: "var(--bg-surface)",
             borderColor: "var(--border)",
           }}
         >
-          {/* Editor header */}
-          <div
-            className="flex items-center gap-1.5 px-4 py-3 border-b flex-shrink-0"
-            style={{ borderColor: "var(--border)" }}
-          >
-            <PenLine size={12} style={{ color: "var(--accent-1)" }} />
-            <span className="text-xs font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
-              My Notes
-            </span>
-          </div>
-          <div className="flex-1 p-3">
+          {/* Title bar — richer when expanded */}
+          {editorExpanded ? (
+            <div
+              className="flex items-center gap-3 px-6 py-4 border-b flex-shrink-0"
+              style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--accent-1) 5%, var(--bg-surface))" }}
+            >
+              <span
+                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-xs font-bold font-mono flex-shrink-0"
+                style={{ background: "linear-gradient(135deg,var(--accent-1),var(--accent-2))", color: "var(--accent-icon-text)" }}
+              >
+                {String(originalIndex + 1).padStart(2, "0")}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold leading-tight truncate" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
+                  {note.title}
+                </p>
+                <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{note.description}</p>
+              </div>
+              <PenLine size={13} style={{ color: "var(--accent-1)", flexShrink: 0 }} />
+            </div>
+          ) : (
+            <div
+              className="flex items-center gap-1.5 px-4 py-3 border-b flex-shrink-0"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <PenLine size={12} style={{ color: "var(--accent-1)" }} />
+              <span className="text-xs font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
+                My Notes — {note.title}
+              </span>
+            </div>
+          )}
+          <div className="flex-1 p-4">
             <PersonalNotesEditor noteSlug={note.slug} />
           </div>
         </div>
@@ -151,6 +181,7 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
   const [activeSlug, setActiveSlug] = useState(notes[0]?.slug ?? "");
   const [listVisible, setListVisible] = useState(true);
   const [editorOpen, setEditorOpen] = useState(true);
+  const [editorExpanded, setEditorExpanded] = useState(false);
   const rightRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const listScrollRef = useRef<HTMLDivElement>(null);
@@ -321,9 +352,25 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
             >
               {catLabel}
             </h1>
+            {/* Expand notes to full width */}
+            {editorOpen && (
+              <button
+                onClick={() => setEditorExpanded(v => !v)}
+                className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all flex-shrink-0"
+                style={{
+                  background: editorExpanded ? "color-mix(in srgb, var(--accent-1) 10%, var(--bg-surface))" : "var(--bg-surface)",
+                  borderColor: editorExpanded ? "var(--accent-1)" : "var(--border)",
+                  color: editorExpanded ? "var(--accent-1)" : "var(--text-muted)",
+                }}
+                title={editorExpanded ? "Collapse notes" : "Expand notes to full width"}
+              >
+                {editorExpanded ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                {editorExpanded ? "Collapse" : "Expand"}
+              </button>
+            )}
             {/* Global notes toggle */}
             <button
-              onClick={() => setEditorOpen(v => !v)}
+              onClick={() => { setEditorOpen(v => !v); setEditorExpanded(false); }}
               className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all flex-shrink-0"
               style={{
                 background: editorOpen ? "color-mix(in srgb, var(--accent-1) 10%, var(--bg-surface))" : "var(--bg-surface)",
@@ -351,6 +398,7 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
                   originalIndex={originalIndex}
                   query={query}
                   editorOpen={editorOpen}
+                  editorExpanded={editorExpanded}
                 />
               );
             })
