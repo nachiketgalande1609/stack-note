@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen, Maximize2, Minimize2 } from "lucide-react";
+import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen, Maximize2, Minimize2, Bold, Italic, Heading2, Heading3, List, Code, FileCode, Quote } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
 import CommentBox from "./CommentBox";
 import type { Note } from "../data/types";
@@ -23,11 +23,38 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
+function ToolbarBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className="flex items-center justify-center w-6 h-6 rounded transition-colors flex-shrink-0"
+      style={{ color: "var(--text-muted)", background: "transparent" }}
+      onMouseEnter={e => {
+        (e.currentTarget as HTMLElement).style.background = "var(--bg-surface)";
+        (e.currentTarget as HTMLElement).style.color = "var(--text-primary)";
+      }}
+      onMouseLeave={e => {
+        (e.currentTarget as HTMLElement).style.background = "transparent";
+        (e.currentTarget as HTMLElement).style.color = "var(--text-muted)";
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Divider() {
+  return <span className="w-px h-3.5 mx-0.5 flex-shrink-0" style={{ background: "var(--border)" }} />;
+}
+
 function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
   const storageKey = `sn-personal-notes-${noteSlug}`;
   const [text, setText] = useState("");
   const [saved, setSaved] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const taRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     try { setText(localStorage.getItem(storageKey) ?? ""); } catch {}
@@ -44,26 +71,113 @@ function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
     }, 600);
   }
 
+  function applyFormat(type: string) {
+    const el = taRef.current;
+    if (!el) return;
+    const { selectionStart: s, selectionEnd: e, value: v } = el;
+    const selected = v.slice(s, e);
+    const lineStart = v.lastIndexOf('\n', s - 1) + 1;
+    let nv = v, ns = s, ne = e;
+
+    switch (type) {
+      case 'bold': {
+        const isBold = selected.startsWith('**') && selected.endsWith('**') && selected.length > 4;
+        if (isBold) { const inner = selected.slice(2, -2); nv = v.slice(0, s) + inner + v.slice(e); ne = s + inner.length; }
+        else { const ph = selected || 'bold text'; nv = v.slice(0, s) + `**${ph}**` + v.slice(e); ns = s + 2; ne = ns + ph.length; }
+        break;
+      }
+      case 'italic': {
+        const isItalic = selected.startsWith('*') && selected.endsWith('*') && !selected.startsWith('**');
+        if (isItalic) { const inner = selected.slice(1, -1); nv = v.slice(0, s) + inner + v.slice(e); ne = s + inner.length; }
+        else { const ph = selected || 'italic text'; nv = v.slice(0, s) + `*${ph}*` + v.slice(e); ns = s + 1; ne = ns + ph.length; }
+        break;
+      }
+      case 'h2': {
+        const lt = v.slice(lineStart);
+        if (lt.startsWith('## ')) { nv = v.slice(0, lineStart) + lt.slice(3); ns = Math.max(lineStart, s - 3); ne = Math.max(lineStart, e - 3); }
+        else if (lt.startsWith('### ')) { nv = v.slice(0, lineStart) + '## ' + lt.slice(4); ns = s - 1; ne = e - 1; }
+        else { nv = v.slice(0, lineStart) + '## ' + v.slice(lineStart); ns = s + 3; ne = e + 3; }
+        break;
+      }
+      case 'h3': {
+        const lt = v.slice(lineStart);
+        if (lt.startsWith('### ')) { nv = v.slice(0, lineStart) + lt.slice(4); ns = Math.max(lineStart, s - 4); ne = Math.max(lineStart, e - 4); }
+        else if (lt.startsWith('## ')) { nv = v.slice(0, lineStart) + '### ' + lt.slice(3); ns = s + 1; ne = e + 1; }
+        else { nv = v.slice(0, lineStart) + '### ' + v.slice(lineStart); ns = s + 4; ne = e + 4; }
+        break;
+      }
+      case 'bullet': {
+        const chunk = v.slice(lineStart, e);
+        const lines = chunk.split('\n');
+        const allBullet = lines.every(l => l.startsWith('- '));
+        const replaced = lines.map(l => allBullet ? l.slice(2) : (l.startsWith('- ') ? l : `- ${l}`)).join('\n');
+        nv = v.slice(0, lineStart) + replaced + v.slice(e);
+        ne = lineStart + replaced.length;
+        ns = Math.max(lineStart, s + (allBullet ? -2 : 2));
+        break;
+      }
+      case 'code': {
+        const isCoded = selected.startsWith('`') && selected.endsWith('`') && selected.length > 2;
+        if (isCoded) { const inner = selected.slice(1, -1); nv = v.slice(0, s) + inner + v.slice(e); ne = s + inner.length; }
+        else { const ph = selected || 'code'; nv = v.slice(0, s) + '`' + ph + '`' + v.slice(e); ns = s + 1; ne = ns + ph.length; }
+        break;
+      }
+      case 'codeblock': {
+        const ph = selected || 'code here';
+        const pre = s > 0 && v[s - 1] !== '\n' ? '\n' : '';
+        const suf = e < v.length && v[e] !== '\n' ? '\n' : '';
+        const block = pre + '```\n' + ph + '\n```' + suf;
+        nv = v.slice(0, s) + block + v.slice(e);
+        ns = s + pre.length + 4;
+        ne = ns + ph.length;
+        break;
+      }
+      case 'quote': {
+        const lt = v.slice(lineStart);
+        if (lt.startsWith('> ')) { nv = v.slice(0, lineStart) + lt.slice(2); ns = Math.max(lineStart, s - 2); ne = Math.max(lineStart, e - 2); }
+        else { nv = v.slice(0, lineStart) + '> ' + v.slice(lineStart); ns = s + 2; ne = e + 2; }
+        break;
+      }
+    }
+
+    handleChange(nv);
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(ns, ne); });
+  }
+
   if (!noteSlug) return null;
 
   return (
-    <div className="flex flex-col h-full">
-      {saved && (
-        <span className="flex items-center gap-1 text-xs mb-1.5 self-end" style={{ color: "var(--text-muted)" }}>
-          <Check size={10} /> Saved
-        </span>
-      )}
+    <div className="flex flex-col h-full gap-2">
+      {/* Toolbar */}
+      <div
+        className="flex items-center gap-0.5 px-2 py-1.5 rounded-lg flex-shrink-0"
+        style={{ background: "var(--bg-surface-2)", border: "1px solid var(--border)" }}
+      >
+        <ToolbarBtn onClick={() => applyFormat('bold')} title="Bold"><Bold size={12} /></ToolbarBtn>
+        <ToolbarBtn onClick={() => applyFormat('italic')} title="Italic"><Italic size={12} /></ToolbarBtn>
+        <Divider />
+        <ToolbarBtn onClick={() => applyFormat('h2')} title="Heading 2"><Heading2 size={12} /></ToolbarBtn>
+        <ToolbarBtn onClick={() => applyFormat('h3')} title="Heading 3"><Heading3 size={12} /></ToolbarBtn>
+        <Divider />
+        <ToolbarBtn onClick={() => applyFormat('bullet')} title="Bullet list"><List size={12} /></ToolbarBtn>
+        <Divider />
+        <ToolbarBtn onClick={() => applyFormat('code')} title="Inline code"><Code size={12} /></ToolbarBtn>
+        <ToolbarBtn onClick={() => applyFormat('codeblock')} title="Code block"><FileCode size={12} /></ToolbarBtn>
+        <Divider />
+        <ToolbarBtn onClick={() => applyFormat('quote')} title="Blockquote"><Quote size={12} /></ToolbarBtn>
+        {saved && (
+          <span className="flex items-center gap-1 text-xs ml-auto" style={{ color: "var(--text-muted)" }}>
+            <Check size={10} /> Saved
+          </span>
+        )}
+      </div>
       <textarea
+        ref={taRef}
         value={text}
         onChange={e => handleChange(e.target.value)}
-        placeholder="Write your notes here…"
+        placeholder="Write your notes here… (supports markdown)"
         className="flex-1 w-full bg-transparent text-sm outline-none resize-none"
-        style={{
-          color: "var(--text-primary)",
-          fontFamily: "Inter, sans-serif",
-          lineHeight: 1.7,
-          minHeight: 200,
-        }}
+        style={{ color: "var(--text-primary)", fontFamily: "Inter, sans-serif", lineHeight: 1.7, minHeight: 160 }}
       />
     </div>
   );
