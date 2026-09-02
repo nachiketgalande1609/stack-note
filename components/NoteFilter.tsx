@@ -190,7 +190,7 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
   const editorFlex = editorExpanded ? "1 1 100%" : "1 1 50%";
 
   return (
-    <div id={note.slug} className="flex gap-4 items-start" style={{ scrollMarginTop: "24px" }}>
+    <div id={note.slug} className="flex gap-4 items-stretch" style={{ scrollMarginTop: "24px" }}>
 
       {/* Note card */}
       <div
