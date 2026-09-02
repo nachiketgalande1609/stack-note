@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen, Maximize2, Minimize2, Bold, Italic, Heading2, Heading3, List, Code, FileCode, Quote } from "lucide-react";
+import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen, Maximize2, Minimize2, Bold, Italic, Heading1, Heading2, Heading3, Pilcrow, List, Code, FileCode, Quote } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
 import CommentBox from "./CommentBox";
 import type { Note } from "../data/types";
@@ -85,18 +85,21 @@ function useNotesEditor(noteSlug: string) {
         else { const ph = selected || 'italic text'; nv = v.slice(0, s) + `*${ph}*` + v.slice(e); ns = s + 1; ne = ns + ph.length; }
         break;
       }
-      case 'h2': {
-        const lt = v.slice(lineStart);
-        if (lt.startsWith('## ')) { nv = v.slice(0, lineStart) + lt.slice(3); ns = Math.max(lineStart, s - 3); ne = Math.max(lineStart, e - 3); }
-        else if (lt.startsWith('### ')) { nv = v.slice(0, lineStart) + '## ' + lt.slice(4); ns = s - 1; ne = e - 1; }
-        else { nv = v.slice(0, lineStart) + '## ' + v.slice(lineStart); ns = s + 3; ne = e + 3; }
-        break;
-      }
+      case 'paragraph':
+      case 'h1':
+      case 'h2':
       case 'h3': {
-        const lt = v.slice(lineStart);
-        if (lt.startsWith('### ')) { nv = v.slice(0, lineStart) + lt.slice(4); ns = Math.max(lineStart, s - 4); ne = Math.max(lineStart, e - 4); }
-        else if (lt.startsWith('## ')) { nv = v.slice(0, lineStart) + '### ' + lt.slice(3); ns = s + 1; ne = e + 1; }
-        else { nv = v.slice(0, lineStart) + '### ' + v.slice(lineStart); ns = s + 4; ne = e + 4; }
+        const prefix = type === 'paragraph' ? '' : type === 'h1' ? '# ' : type === 'h2' ? '## ' : '### ';
+        const lineEnd = v.indexOf('\n', lineStart);
+        const fullLine = lineEnd === -1 ? v.slice(lineStart) : v.slice(lineStart, lineEnd);
+        const stripped = fullLine.replace(/^#{1,6} /, '');
+        const oldPrefixLen = fullLine.length - stripped.length;
+        const alreadySet = fullLine.startsWith(prefix) && prefix !== '';
+        const newLine = alreadySet ? stripped : prefix + stripped;
+        const delta = newLine.length - fullLine.length;
+        nv = v.slice(0, lineStart) + newLine + (lineEnd === -1 ? '' : v.slice(lineEnd));
+        ns = Math.max(lineStart, s + delta);
+        ne = Math.max(lineStart, e + delta);
         break;
       }
       case 'bullet': {
@@ -168,6 +171,8 @@ function EditorToolbar({ applyFormat, saved }: { applyFormat: (t: string) => voi
       <TBtn onClick={() => applyFormat('bold')} title="Bold"><Bold size={11} /></TBtn>
       <TBtn onClick={() => applyFormat('italic')} title="Italic"><Italic size={11} /></TBtn>
       <TDivider />
+      <TBtn onClick={() => applyFormat('paragraph')} title="Paragraph"><Pilcrow size={11} /></TBtn>
+      <TBtn onClick={() => applyFormat('h1')} title="Heading 1"><Heading1 size={11} /></TBtn>
       <TBtn onClick={() => applyFormat('h2')} title="Heading 2"><Heading2 size={11} /></TBtn>
       <TBtn onClick={() => applyFormat('h3')} title="Heading 3"><Heading3 size={11} /></TBtn>
       <TDivider />
