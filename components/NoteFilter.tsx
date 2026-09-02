@@ -80,15 +80,14 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
 
       {/* Note card */}
       <div
-        className="min-w-0 rounded-2xl border p-8 transition-all duration-200"
+        className="min-w-0 rounded-2xl p-8 transition-all duration-200"
         style={{
           flex: cardFlex,
           overflow: editorOpen && editorExpanded ? "hidden" : undefined,
           maxWidth: editorOpen && editorExpanded ? 0 : undefined,
           padding: editorOpen && editorExpanded ? 0 : undefined,
-          border: editorOpen && editorExpanded ? "none" : undefined,
+          border: editorOpen && editorExpanded ? "none" : "1px solid var(--border)",
           background: "var(--bg-surface)",
-          borderColor: "var(--border)",
           boxShadow: editorOpen && editorExpanded ? "none" : "var(--glow)",
           opacity: editorOpen && editorExpanded ? 0 : 1,
         }}
@@ -120,12 +119,12 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
       {/* Per-card notes editor */}
       {editorOpen && (
         <div
-          className="hidden lg:flex flex-col rounded-2xl border transition-all duration-200"
+          className="hidden lg:flex flex-col rounded-2xl transition-all duration-200"
           style={{
             flex: editorFlex,
             minWidth: 0,
+            border: "1px solid var(--border)",
             background: "var(--bg-surface)",
-            borderColor: "var(--border)",
           }}
         >
           {/* Title bar — richer when expanded */}
