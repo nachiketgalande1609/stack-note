@@ -23,33 +23,27 @@ function Highlight({ text, query }: { text: string; query: string }) {
   );
 }
 
-function ToolbarBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
+function TBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
   return (
     <button
       type="button"
       onClick={onClick}
       title={title}
-      className="flex items-center justify-center w-6 h-6 rounded transition-colors flex-shrink-0"
+      className="flex items-center justify-center w-5 h-5 rounded flex-shrink-0 transition-colors"
       style={{ color: "var(--text-muted)", background: "transparent" }}
-      onMouseEnter={e => {
-        (e.currentTarget as HTMLElement).style.background = "var(--bg-surface)";
-        (e.currentTarget as HTMLElement).style.color = "var(--text-primary)";
-      }}
-      onMouseLeave={e => {
-        (e.currentTarget as HTMLElement).style.background = "transparent";
-        (e.currentTarget as HTMLElement).style.color = "var(--text-muted)";
-      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = "var(--bg-surface-2)"; (e.currentTarget as HTMLElement).style.color = "var(--text-primary)"; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
     >
       {children}
     </button>
   );
 }
 
-function Divider() {
-  return <span className="w-px h-3.5 mx-0.5 flex-shrink-0" style={{ background: "var(--border)" }} />;
+function TDivider() {
+  return <span className="w-px h-3 mx-0.5 flex-shrink-0" style={{ background: "var(--border)" }} />;
 }
 
-function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
+function useNotesEditor(noteSlug: string) {
   const storageKey = `sn-personal-notes-${noteSlug}`;
   const [text, setText] = useState("");
   const [saved, setSaved] = useState(false);
@@ -78,17 +72,16 @@ function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
     const selected = v.slice(s, e);
     const lineStart = v.lastIndexOf('\n', s - 1) + 1;
     let nv = v, ns = s, ne = e;
-
     switch (type) {
       case 'bold': {
         const isBold = selected.startsWith('**') && selected.endsWith('**') && selected.length > 4;
-        if (isBold) { const inner = selected.slice(2, -2); nv = v.slice(0, s) + inner + v.slice(e); ne = s + inner.length; }
+        if (isBold) { const i = selected.slice(2, -2); nv = v.slice(0, s) + i + v.slice(e); ne = s + i.length; }
         else { const ph = selected || 'bold text'; nv = v.slice(0, s) + `**${ph}**` + v.slice(e); ns = s + 2; ne = ns + ph.length; }
         break;
       }
       case 'italic': {
         const isItalic = selected.startsWith('*') && selected.endsWith('*') && !selected.startsWith('**');
-        if (isItalic) { const inner = selected.slice(1, -1); nv = v.slice(0, s) + inner + v.slice(e); ne = s + inner.length; }
+        if (isItalic) { const i = selected.slice(1, -1); nv = v.slice(0, s) + i + v.slice(e); ne = s + i.length; }
         else { const ph = selected || 'italic text'; nv = v.slice(0, s) + `*${ph}*` + v.slice(e); ns = s + 1; ne = ns + ph.length; }
         break;
       }
@@ -118,7 +111,7 @@ function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
       }
       case 'code': {
         const isCoded = selected.startsWith('`') && selected.endsWith('`') && selected.length > 2;
-        if (isCoded) { const inner = selected.slice(1, -1); nv = v.slice(0, s) + inner + v.slice(e); ne = s + inner.length; }
+        if (isCoded) { const i = selected.slice(1, -1); nv = v.slice(0, s) + i + v.slice(e); ne = s + i.length; }
         else { const ph = selected || 'code'; nv = v.slice(0, s) + '`' + ph + '`' + v.slice(e); ns = s + 1; ne = ns + ph.length; }
         break;
       }
@@ -128,8 +121,7 @@ function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
         const suf = e < v.length && v[e] !== '\n' ? '\n' : '';
         const block = pre + '```\n' + ph + '\n```' + suf;
         nv = v.slice(0, s) + block + v.slice(e);
-        ns = s + pre.length + 4;
-        ne = ns + ph.length;
+        ns = s + pre.length + 4; ne = ns + ph.length;
         break;
       }
       case 'quote': {
@@ -139,46 +131,29 @@ function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
         break;
       }
     }
-
     handleChange(nv);
     requestAnimationFrame(() => { el.focus(); el.setSelectionRange(ns, ne); });
   }
 
-  if (!noteSlug) return null;
+  return { text, handleChange, saved, taRef, applyFormat };
+}
 
+function EditorToolbar({ applyFormat, saved }: { applyFormat: (t: string) => void; saved: boolean }) {
   return (
-    <div className="flex flex-col h-full gap-2">
-      {/* Toolbar */}
-      <div
-        className="flex items-center gap-0.5 px-2 py-1.5 rounded-lg flex-shrink-0"
-        style={{ background: "var(--bg-surface-2)", border: "1px solid var(--border)" }}
-      >
-        <ToolbarBtn onClick={() => applyFormat('bold')} title="Bold"><Bold size={12} /></ToolbarBtn>
-        <ToolbarBtn onClick={() => applyFormat('italic')} title="Italic"><Italic size={12} /></ToolbarBtn>
-        <Divider />
-        <ToolbarBtn onClick={() => applyFormat('h2')} title="Heading 2"><Heading2 size={12} /></ToolbarBtn>
-        <ToolbarBtn onClick={() => applyFormat('h3')} title="Heading 3"><Heading3 size={12} /></ToolbarBtn>
-        <Divider />
-        <ToolbarBtn onClick={() => applyFormat('bullet')} title="Bullet list"><List size={12} /></ToolbarBtn>
-        <Divider />
-        <ToolbarBtn onClick={() => applyFormat('code')} title="Inline code"><Code size={12} /></ToolbarBtn>
-        <ToolbarBtn onClick={() => applyFormat('codeblock')} title="Code block"><FileCode size={12} /></ToolbarBtn>
-        <Divider />
-        <ToolbarBtn onClick={() => applyFormat('quote')} title="Blockquote"><Quote size={12} /></ToolbarBtn>
-        {saved && (
-          <span className="flex items-center gap-1 text-xs ml-auto" style={{ color: "var(--text-muted)" }}>
-            <Check size={10} /> Saved
-          </span>
-        )}
-      </div>
-      <textarea
-        ref={taRef}
-        value={text}
-        onChange={e => handleChange(e.target.value)}
-        placeholder="Write your notes here… (supports markdown)"
-        className="flex-1 w-full bg-transparent text-sm outline-none resize-none"
-        style={{ color: "var(--text-primary)", fontFamily: "Inter, sans-serif", lineHeight: 1.7, minHeight: 160 }}
-      />
+    <div className="flex items-center gap-0.5 flex-shrink-0">
+      <TBtn onClick={() => applyFormat('bold')} title="Bold"><Bold size={11} /></TBtn>
+      <TBtn onClick={() => applyFormat('italic')} title="Italic"><Italic size={11} /></TBtn>
+      <TDivider />
+      <TBtn onClick={() => applyFormat('h2')} title="Heading 2"><Heading2 size={11} /></TBtn>
+      <TBtn onClick={() => applyFormat('h3')} title="Heading 3"><Heading3 size={11} /></TBtn>
+      <TDivider />
+      <TBtn onClick={() => applyFormat('bullet')} title="Bullet list"><List size={11} /></TBtn>
+      <TDivider />
+      <TBtn onClick={() => applyFormat('code')} title="Inline code"><Code size={11} /></TBtn>
+      <TBtn onClick={() => applyFormat('codeblock')} title="Code block"><FileCode size={11} /></TBtn>
+      <TDivider />
+      <TBtn onClick={() => applyFormat('quote')} title="Blockquote"><Quote size={11} /></TBtn>
+      {saved && <Check size={9} className="ml-1 flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
     </div>
   );
 }
@@ -186,6 +161,7 @@ function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
 function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
   note: Note; originalIndex: number; query: string; editorOpen: boolean; editorExpanded: boolean;
 }) {
+  const { text, handleChange, saved, taRef, applyFormat } = useNotesEditor(note.slug);
   const cardFlex = !editorOpen ? "1 1 100%" : editorExpanded ? "0 0 0px" : "1 1 50%";
   const editorFlex = editorExpanded ? "1 1 100%" : "1 1 50%";
 
@@ -241,39 +217,51 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
             background: "var(--bg-surface)",
           }}
         >
-          {/* Title bar — richer when expanded */}
+          {/* Title bar */}
           {editorExpanded ? (
             <div
-              className="flex items-center gap-3 px-6 py-4 border-b flex-shrink-0"
+              className="flex items-center gap-2 px-4 py-2.5 border-b flex-shrink-0"
               style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--accent-1) 5%, var(--bg-surface))" }}
             >
               <span
-                className="inline-flex items-center justify-center w-7 h-7 rounded-md text-xs font-bold font-mono flex-shrink-0"
+                className="inline-flex items-center justify-center w-6 h-6 rounded text-xs font-bold font-mono flex-shrink-0"
                 style={{ background: "linear-gradient(135deg,var(--accent-1),var(--accent-2))", color: "var(--accent-icon-text)" }}
               >
                 {String(originalIndex + 1).padStart(2, "0")}
               </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold leading-tight truncate" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
-                  {note.title}
-                </p>
-                <p className="text-xs mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{note.description}</p>
-              </div>
-              <PenLine size={13} style={{ color: "var(--accent-1)", flexShrink: 0 }} />
+              <p className="text-xs font-semibold truncate min-w-0 flex-1" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
+                {note.title}
+              </p>
+              {saved && <Check size={9} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
             </div>
           ) : (
             <div
-              className="flex items-center gap-1.5 px-4 py-3 border-b flex-shrink-0"
+              className="flex items-center gap-2 px-3 py-2 border-b flex-shrink-0"
               style={{ borderColor: "var(--border)" }}
             >
-              <PenLine size={12} style={{ color: "var(--accent-1)" }} />
-              <span className="text-xs font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
-                My Notes — {note.title}
+              <PenLine size={11} style={{ color: "var(--accent-1)", flexShrink: 0 }} />
+              <span className="text-xs font-semibold truncate min-w-0 flex-1" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
+                {note.title}
               </span>
+              {saved && <Check size={9} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
             </div>
           )}
-          <div className="flex-1 p-4">
-            <PersonalNotesEditor noteSlug={note.slug} />
+          {/* Toolbar row — directly below title bar */}
+          <div
+            className="flex items-center gap-0.5 px-2 py-1 border-b flex-shrink-0"
+            style={{ borderColor: "var(--border)", background: "var(--bg-surface-2)" }}
+          >
+            <EditorToolbar applyFormat={applyFormat} saved={false} />
+          </div>
+          <div className="flex-1 p-3 overflow-hidden">
+            <textarea
+              ref={taRef}
+              value={text}
+              onChange={e => handleChange(e.target.value)}
+              placeholder="Write your notes here… (supports markdown)"
+              className="w-full h-full bg-transparent text-sm outline-none resize-none"
+              style={{ color: "var(--text-primary)", fontFamily: "Inter, sans-serif", lineHeight: 1.7, minHeight: 120 }}
+            />
           </div>
         </div>
       )}
