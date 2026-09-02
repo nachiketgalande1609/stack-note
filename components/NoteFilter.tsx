@@ -47,39 +47,24 @@ function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
   if (!noteSlug) return null;
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-1.5">
-          <PenLine size={12} style={{ color: "var(--accent-1)" }} />
-          <span className="text-xs font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
-            My Notes
-          </span>
-        </div>
-        {saved && (
-          <span className="flex items-center gap-1 text-xs" style={{ color: "var(--text-muted)" }}>
-            <Check size={10} /> Saved
-          </span>
-        )}
-      </div>
+    <div className="flex flex-col h-full">
+      {saved && (
+        <span className="flex items-center gap-1 text-xs mb-1.5 self-end" style={{ color: "var(--text-muted)" }}>
+          <Check size={10} /> Saved
+        </span>
+      )}
       <textarea
         value={text}
         onChange={e => handleChange(e.target.value)}
-        placeholder="Write your notes here… (auto-saved)"
-        rows={12}
-        className="w-full rounded-xl border px-3 py-2.5 text-sm outline-none resize-y"
+        placeholder="Write your notes here…"
+        className="flex-1 w-full bg-transparent text-sm outline-none resize-none"
         style={{
-          background: "var(--bg-base)",
-          borderColor: "var(--border)",
           color: "var(--text-primary)",
           fontFamily: "Inter, sans-serif",
           lineHeight: 1.7,
           minHeight: 200,
-          transition: "border-color 150ms",
         }}
-        onFocus={e => (e.currentTarget.style.borderColor = "var(--accent-1)")}
-        onBlur={e => (e.currentTarget.style.borderColor = "var(--border)")}
       />
-      <p className="text-xs mt-1.5" style={{ color: "var(--text-muted)" }}>Auto-saved to your browser.</p>
     </div>
   );
 }
@@ -89,8 +74,6 @@ interface NoteFilterProps {
   catSlug: string;
   catLabel: string;
 }
-
-const NAV_H = 56;
 
 export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps) {
   const [query, setQuery] = useState("");
@@ -106,9 +89,6 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
         return n.title.toLowerCase().includes(q) || n.description.toLowerCase().includes(q);
       })
     : notes;
-
-  const activeNote = notes.find(n => n.slug === activeSlug) ?? notes[0] ?? null;
-  const activeIndex = activeNote ? notes.findIndex(n => n.slug === activeNote.slug) : 0;
 
   // Track which card is scrolled into view (in right panel)
   useEffect(() => {
@@ -249,59 +229,48 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
         </div>
       </div>
 
-      {/* ── Right: cards + sticky editor ── */}
+      {/* ── Right: cards, each with its own editor ── */}
       <div ref={rightRef} className="flex-1 overflow-y-auto">
-        <div className="flex gap-6 p-8 items-start">
+        <div className="p-8 space-y-6">
 
-          {/* Note cards */}
-          <div className="flex-1 min-w-0 space-y-6">
-            {/* Category header row */}
-            <div className="flex items-center gap-3 mb-2">
-              <button
-                onClick={() => setListVisible(v => !v)}
-                className="flex items-center justify-center w-7 h-7 rounded-lg border transition-all flex-shrink-0"
-                style={{
-                  background: "var(--bg-surface)",
-                  borderColor: "var(--border)",
-                  color: "var(--text-muted)",
-                }}
-                title={listVisible ? "Hide note list" : "Show note list"}
-              >
-                {listVisible ? <PanelLeftClose size={13} /> : <PanelLeftOpen size={13} />}
-              </button>
-              <h1
-                className="text-3xl font-bold"
-                style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)", letterSpacing: "-0.02em" }}
-              >
-                {catLabel}
-              </h1>
+          {/* Category header */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setListVisible(v => !v)}
+              className="flex items-center justify-center w-7 h-7 rounded-lg border transition-all flex-shrink-0"
+              style={{ background: "var(--bg-surface)", borderColor: "var(--border)", color: "var(--text-muted)" }}
+              title={listVisible ? "Hide note list" : "Show note list"}
+            >
+              {listVisible ? <PanelLeftClose size={13} /> : <PanelLeftOpen size={13} />}
+            </button>
+            <h1
+              className="text-3xl font-bold"
+              style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)", letterSpacing: "-0.02em" }}
+            >
+              {catLabel}
+            </h1>
+          </div>
+
+          {filtered.length === 0 ? (
+            <div className="py-16 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+              No notes match &ldquo;{query}&rdquo;
             </div>
-            {filtered.length === 0 ? (
-              <div className="py-16 text-center text-sm" style={{ color: "var(--text-muted)" }}>
-                No notes match &ldquo;{query}&rdquo;
-              </div>
-            ) : (
-              filtered.map(note => {
-                const originalIndex = notes.indexOf(note);
-                return (
+          ) : (
+            filtered.map(note => {
+              const originalIndex = notes.indexOf(note);
+              return (
+                /* Each row: card + editor side by side */
+                <div key={note.slug} id={note.slug} className="flex gap-4 items-start" style={{ scrollMarginTop: "24px" }}>
+
+                  {/* Note card */}
                   <div
-                    key={note.slug}
-                    id={note.slug}
-                    className="rounded-2xl border p-8"
-                    style={{
-                      background: "var(--bg-surface)",
-                      borderColor: "var(--border)",
-                      boxShadow: "var(--glow)",
-                      scrollMarginTop: "24px",
-                    }}
+                    className="flex-1 min-w-0 rounded-2xl border p-8"
+                    style={{ background: "var(--bg-surface)", borderColor: "var(--border)", boxShadow: "var(--glow)" }}
                   >
                     <div className="flex items-center gap-3 mb-4">
                       <span
                         className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-sm font-bold font-mono flex-shrink-0"
-                        style={{
-                          background: "linear-gradient(135deg,var(--accent-1),var(--accent-2))",
-                          color: "var(--accent-icon-text)",
-                        }}
+                        style={{ background: "linear-gradient(135deg,var(--accent-1),var(--accent-2))", color: "var(--accent-icon-text)" }}
                       >
                         {String(originalIndex + 1).padStart(2, "0")}
                       </span>
@@ -317,55 +286,38 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
                       <Highlight text={note.description} query={query} />
                     </p>
 
-                    <div className="h-px mb-7"
-                      style={{ background: "linear-gradient(90deg,var(--border-strong),transparent)" }} />
+                    <div className="h-px mb-7" style={{ background: "linear-gradient(90deg,var(--border-strong),transparent)" }} />
 
                     <MarkdownContent content={note.content.replace(/^##\s+[^\n]+\n?/, "")} highlight={query} />
                   </div>
-                );
-              })
-            )}
 
-            {/* Comment box */}
-            <div className="mt-2">
-              <CommentBox slug={catSlug} />
-            </div>
-          </div>
-
-          {/* Sticky notes editor — visible on xl+ screens */}
-          <div className="hidden xl:block w-[300px] flex-shrink-0">
-            <div className="sticky flex flex-col gap-3" style={{ top: 0 }}>
-              {/* Active note chip */}
-              {activeNote && (
-                <div
-                  className="rounded-xl border px-4 py-3"
-                  style={{ background: "var(--bg-surface)", borderColor: "var(--border)" }}
-                >
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-mono font-bold" style={{ color: "var(--accent-1)" }}>
-                      {String(activeIndex + 1).padStart(2, "0")}
-                    </span>
-                    <span
-                      className="text-sm font-semibold truncate"
-                      style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}
+                  {/* Per-card notes editor */}
+                  <div
+                    className="hidden lg:flex w-[280px] flex-shrink-0 rounded-2xl border flex-col"
+                    style={{ background: "var(--bg-surface)", borderColor: "var(--border)" }}
+                  >
+                    <div
+                      className="flex items-center gap-1.5 px-4 py-3 border-b flex-shrink-0"
+                      style={{ borderColor: "var(--border)" }}
                     >
-                      {activeNote.title}
-                    </span>
+                      <PenLine size={12} style={{ color: "var(--accent-1)" }} />
+                      <span className="text-xs font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
+                        My Notes
+                      </span>
+                    </div>
+                    <div className="flex-1 p-3">
+                      <PersonalNotesEditor noteSlug={note.slug} />
+                    </div>
                   </div>
-                  <p className="text-xs line-clamp-2 leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                    {activeNote.description}
-                  </p>
-                </div>
-              )}
 
-              {/* Editor */}
-              <div
-                className="rounded-xl border px-4 py-4"
-                style={{ background: "var(--bg-surface)", borderColor: "var(--border)" }}
-              >
-                <PersonalNotesEditor noteSlug={activeNote?.slug ?? ""} />
-              </div>
-            </div>
+                </div>
+              );
+            })
+          )}
+
+          {/* Comment box */}
+          <div className="mt-2">
+            <CommentBox slug={catSlug} />
           </div>
 
         </div>
