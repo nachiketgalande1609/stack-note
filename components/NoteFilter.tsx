@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen, Maximize2, Minimize2, Bold, Italic, Heading1, Heading2, Heading3, Pilcrow, List, Code, FileCode, Quote, Eye, EyeOff } from "lucide-react";
+import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen, Maximize2, Minimize2, Bold, Italic, Heading1, Heading2, Heading3, Pilcrow, List, Code, FileCode, Quote } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
 import CommentBox from "./CommentBox";
+import { useAuth } from "./AuthProvider";
+import { getSupabase } from "../lib/supabase";
 import type { Note } from "../data/types";
 
 function Highlight({ text, query }: { text: string; query: string }) {
@@ -43,33 +45,204 @@ function TDivider() {
   return <span className="w-px h-3.5 mx-1 flex-shrink-0" style={{ background: "var(--border-strong)" }} />;
 }
 
-function useNotesEditor(noteSlug: string) {
+/* ── Live markdown renderer (source-preserving: innerText == raw markdown) ── */
+function esc(s: string) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function inlineRender(s: string) {
+  return esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<span style="font-size:0;line-height:0">**</span><strong>$1</strong><span style="font-size:0;line-height:0">**</span>')
+    .replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<span style="font-size:0;line-height:0">*</span><em>$1</em><span style="font-size:0;line-height:0">*</span>')
+    .replace(/`([^`]+)`/g, '<span style="font-size:0;line-height:0">`</span><code style="font-family:monospace;font-size:.85em;background:var(--bg-surface-2);padding:1px 4px;border-radius:3px">$1</code><span style="font-size:0;line-height:0">`</span>');
+}
+function renderMdSource(markdown: string): string {
+  if (!markdown) return "<div><br></div>";
+  const lines = markdown.split("\n");
+  const parts: string[] = [];
+  let inCode = false;
+  for (const line of lines) {
+    if (line.match(/^```/)) {
+      inCode = !inCode;
+      parts.push(`<div style="font-family:monospace;font-size:.82em;color:var(--text-muted)">${esc(line)}</div>`);
+      continue;
+    }
+    if (inCode) { parts.push(`<div style="font-family:monospace;font-size:.82em">${esc(line) || "<br>"}</div>`); continue; }
+    if (line === "") { parts.push("<div><br></div>"); continue; }
+    const hm = line.match(/^(#{1,3}) (.*)$/);
+    if (hm) {
+      const [, h, content] = hm;
+      const sz = h.length === 1 ? "1.3em" : h.length === 2 ? "1.1em" : ".95em";
+      parts.push(`<div><span style="font-size:0;line-height:0">${esc(h)} </span><span style="font-weight:700;font-size:${sz};font-family:'Space Grotesk',sans-serif">${inlineRender(content)}</span></div>`);
+      continue;
+    }
+    if (line.startsWith("• ")) { parts.push(`<div><span style="color:var(--accent-1)">• </span>${inlineRender(line.slice(2))}</div>`); continue; }
+    if (line.startsWith("> ")) { parts.push(`<div style="border-left:3px solid color-mix(in srgb,var(--accent-1) 50%,transparent);padding-left:8px"><span style="font-size:0;line-height:0">&gt; </span><em style="color:var(--text-secondary)">${inlineRender(line.slice(2))}</em></div>`); continue; }
+    parts.push(`<div style="line-height:1.7">${inlineRender(line)}</div>`);
+  }
+  return parts.join("") || "<div><br></div>";
+}
+function getCaretOffset(el: HTMLElement): number {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return 0;
+  const range = sel.getRangeAt(0);
+  const pre = range.cloneRange();
+  pre.selectNodeContents(el);
+  pre.setEnd(range.endContainer, range.endOffset);
+  return pre.toString().length;
+}
+function setCaretOffset(el: HTMLElement, offset: number): void {
+  const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+  let remaining = offset;
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const len = (node as Text).length;
+    if (remaining <= len) {
+      const r = document.createRange();
+      r.setStart(node, remaining);
+      r.collapse(true);
+      const sel = window.getSelection();
+      sel?.removeAllRanges();
+      sel?.addRange(r);
+      return;
+    }
+    remaining -= len;
+  }
+  const r = document.createRange();
+  r.selectNodeContents(el);
+  r.collapse(false);
+  window.getSelection()?.removeAllRanges();
+  window.getSelection()?.addRange(r);
+}
+
+/* Read raw markdown from the contenteditable using textContent (no layout reflow).
+   Each top-level <div> child = one rendered line; joining with \n reconstructs markdown. */
+function readRawText(el: HTMLElement): string {
+  const parts: string[] = [];
+  for (const node of Array.from(el.childNodes)) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      parts.push(node.textContent ?? "");
+    } else {
+      parts.push((node as HTMLElement).textContent ?? "");
+    }
+  }
+  return parts.join("\n").replace(/\n$/, "");
+}
+
+// initialContent: null = still loading from DB, string = ready (or unauthenticated localStorage value)
+function useNotesEditor(noteSlug: string, initialContent: string | null) {
   const storageKey = `sn-personal-notes-${noteSlug}`;
-  const [text, setText] = useState("");
+  const { user } = useAuth();
   const [saved, setSaved] = useState(false);
-  const [preview, setPreview] = useState(true);
+  const savedRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const taRef = useRef<HTMLTextAreaElement>(null);
+  const renderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const divRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef("");
+  const composing = useRef(false);
+  const rendering = useRef(false);
+  const hasUserInput = useRef(false);
 
+  // Load when initialContent arrives (authenticated) or on mount (unauthenticated)
   useEffect(() => {
-    try { setText(localStorage.getItem(storageKey) ?? ""); } catch {}
-    setSaved(false);
-  }, [storageKey]);
+    const el = divRef.current;
+    if (!el) return;
+    if (user) {
+      // Wait until parent's batch fetch delivers the content
+      if (initialContent === null) return;
+      // Don't overwrite if user already started typing
+      if (hasUserInput.current) return;
+    }
+    const t = user ? initialContent! : (() => { try { return localStorage.getItem(storageKey) ?? ""; } catch { return ""; } })();
+    textRef.current = t;
+    rendering.current = true;
+    el.innerHTML = renderMdSource(t);
+    rendering.current = false;
+  }, [initialContent, user?.id, storageKey]);
 
-  function handleChange(val: string) {
-    setText(val);
-    setSaved(false);
+  function persist(val: string) {
+    textRef.current = val;
+    if (savedRef.current) { savedRef.current = false; setSaved(false); }
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      try { localStorage.setItem(storageKey, val); } catch {}
+    timerRef.current = setTimeout(async () => {
+      if (user) {
+        try {
+          await getSupabase()
+            .from("personal_notes")
+            .upsert(
+              { user_id: user.id, note_slug: noteSlug, content: val, updated_at: new Date().toISOString() },
+              { onConflict: "user_id,note_slug" }
+            );
+        } catch {}
+      } else {
+        try { localStorage.setItem(storageKey, val); } catch {}
+      }
+      savedRef.current = true;
       setSaved(true);
     }, 600);
   }
 
-  function applyFormat(type: string) {
-    const el = taRef.current;
+  function setHtml(el: HTMLElement, html: string) {
+    rendering.current = true;
+    el.innerHTML = html;
+    rendering.current = false;
+  }
+
+  function rerender(raw: string, cursorOffset: number) {
+    const el = divRef.current;
     if (!el) return;
-    const { selectionStart: s, selectionEnd: e, value: v } = el;
+    setHtml(el, renderMdSource(raw));
+    requestAnimationFrame(() => { el.focus(); setCaretOffset(el, cursorOffset); });
+  }
+
+  function handleInput() {
+    if (composing.current || rendering.current) return;
+    const el = divRef.current;
+    if (!el) return;
+    hasUserInput.current = true;
+    const raw = readRawText(el);
+    persist(raw);
+    // Debounce the re-render so fast typing never blocks
+    if (renderTimerRef.current) clearTimeout(renderTimerRef.current);
+    renderTimerRef.current = setTimeout(() => {
+      const cur = divRef.current;
+      if (!cur) return;
+      const caret = getCaretOffset(cur);
+      setHtml(cur, renderMdSource(textRef.current));
+      requestAnimationFrame(() => { cur.focus(); setCaretOffset(cur, caret); });
+    }, 300);
+  }
+
+  function handleCompositionStart() { composing.current = true; }
+  function handleCompositionEnd() { composing.current = false; handleInput(); }
+
+  function handlePaste(e: React.ClipboardEvent<HTMLDivElement>) {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text/plain");
+    const el = divRef.current;
+    if (!el) return;
+    const caret = getCaretOffset(el);
+    const v = textRef.current;
+    const nv = v.slice(0, caret) + text + v.slice(caret);
+    persist(nv);
+    rerender(nv, caret + text.length);
+  }
+
+  function applyFormat(type: string) {
+    const el = divRef.current;
+    if (!el) return;
+    el.focus();
+    const v = textRef.current;
+    let s = v.length, e = v.length;
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0) {
+      try {
+        const range = sel.getRangeAt(0);
+        const preS = range.cloneRange(); preS.selectNodeContents(el); preS.setEnd(range.startContainer, range.startOffset);
+        s = preS.toString().length;
+        const preE = range.cloneRange(); preE.selectNodeContents(el); preE.setEnd(range.endContainer, range.endOffset);
+        e = preE.toString().length;
+      } catch {}
+    }
     const selected = v.slice(s, e);
     const lineStart = v.lastIndexOf('\n', s - 1) + 1;
     let nv = v, ns = s, ne = e;
@@ -86,21 +259,16 @@ function useNotesEditor(noteSlug: string) {
         else { const ph = selected || 'italic text'; nv = v.slice(0, s) + `*${ph}*` + v.slice(e); ns = s + 1; ne = ns + ph.length; }
         break;
       }
-      case 'paragraph':
-      case 'h1':
-      case 'h2':
-      case 'h3': {
+      case 'paragraph': case 'h1': case 'h2': case 'h3': {
         const prefix = type === 'paragraph' ? '' : type === 'h1' ? '# ' : type === 'h2' ? '## ' : '### ';
         const lineEnd = v.indexOf('\n', lineStart);
         const fullLine = lineEnd === -1 ? v.slice(lineStart) : v.slice(lineStart, lineEnd);
         const stripped = fullLine.replace(/^#{1,6} /, '');
-        const oldPrefixLen = fullLine.length - stripped.length;
         const alreadySet = fullLine.startsWith(prefix) && prefix !== '';
         const newLine = alreadySet ? stripped : prefix + stripped;
         const delta = newLine.length - fullLine.length;
         nv = v.slice(0, lineStart) + newLine + (lineEnd === -1 ? '' : v.slice(lineEnd));
-        ns = Math.max(lineStart, s + delta);
-        ne = Math.max(lineStart, e + delta);
+        ns = Math.max(lineStart, s + delta); ne = Math.max(lineStart, e + delta);
         break;
       }
       case 'bullet': {
@@ -135,44 +303,41 @@ function useNotesEditor(noteSlug: string) {
         break;
       }
     }
-    handleChange(nv);
-    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(ns, ne); });
+    persist(nv);
+    rerender(nv, ns);
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    const el = taRef.current;
-    if (!el || e.key !== 'Enter') return;
-    const { selectionStart: s, value: v } = el;
-    const lineStart = v.lastIndexOf('\n', s - 1) + 1;
-    const lineText = v.slice(lineStart, s);
-    const match = lineText.match(/^(• )/);
-    if (!match) return;
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== 'Enter') return;
+    const el = divRef.current;
+    if (!el) return;
+    const caret = getCaretOffset(el);
+    const v = textRef.current;
+    const lineStart = v.lastIndexOf('\n', caret - 1) + 1;
+    const lineText = v.slice(lineStart, caret);
+    if (!lineText.match(/^• /)) return;
     e.preventDefault();
     if (lineText.trim() === '•') {
-      // Empty bullet — exit bullet mode
-      const nv = v.slice(0, lineStart) + '\n' + v.slice(s);
-      handleChange(nv);
-      requestAnimationFrame(() => { el.focus(); el.setSelectionRange(lineStart + 1, lineStart + 1); });
+      const nv = v.slice(0, lineStart) + '\n' + v.slice(caret);
+      persist(nv);
+      rerender(nv, lineStart + 1);
     } else {
-      // Continue bullet
       const insert = '\n• ';
-      const nv = v.slice(0, s) + insert + v.slice(s);
-      const np = s + insert.length;
-      handleChange(nv);
-      requestAnimationFrame(() => { el.focus(); el.setSelectionRange(np, np); });
+      const nv = v.slice(0, caret) + insert + v.slice(caret);
+      persist(nv);
+      rerender(nv, caret + insert.length);
     }
   }
 
-  return { text, handleChange, saved, preview, setPreview, taRef, applyFormat, handleKeyDown };
+  return { saved, divRef, applyFormat, handleKeyDown, handleInput, handleCompositionStart, handleCompositionEnd, handlePaste };
 }
 
-function EditorToolbar({ applyFormat, saved, preview, onTogglePreview }: {
-  applyFormat: (t: string) => void; saved: boolean; preview: boolean; onTogglePreview: () => void;
+function EditorToolbar({ applyFormat, saved }: {
+  applyFormat: (t: string) => void; saved: boolean;
 }) {
   return (
     <div className="flex items-center gap-0.5 w-full">
-      {/* Format buttons — hidden in preview mode */}
-      <div className="flex items-center gap-0.5 flex-1" style={{ opacity: preview ? 0.3 : 1, pointerEvents: preview ? "none" : "auto" }}>
+      <div className="flex items-center gap-0.5 flex-1">
         <TBtn onClick={() => applyFormat('bold')} title="Bold"><Bold size={11} /></TBtn>
         <TBtn onClick={() => applyFormat('italic')} title="Italic"><Italic size={11} /></TBtn>
         <TDivider />
@@ -188,32 +353,15 @@ function EditorToolbar({ applyFormat, saved, preview, onTogglePreview }: {
         <TDivider />
         <TBtn onClick={() => applyFormat('quote')} title="Blockquote"><Quote size={11} /></TBtn>
       </div>
-      <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
-        {saved && !preview && <Check size={9} style={{ color: "var(--text-muted)" }} />}
-        {/* Preview toggle */}
-        <button
-          type="button"
-          onClick={onTogglePreview}
-          title={preview ? "Switch to markdown editor" : "Preview rendered output"}
-          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors flex-shrink-0"
-          style={{
-            background: preview ? "color-mix(in srgb, var(--accent-1) 12%, transparent)" : "transparent",
-            color: preview ? "var(--accent-1)" : "var(--text-secondary)",
-            border: `1px solid ${preview ? "var(--accent-1)" : "transparent"}`,
-          }}
-        >
-          {preview ? <EyeOff size={11} /> : <Eye size={11} />}
-          {preview ? "Markdown" : "Preview"}
-        </button>
-      </div>
+      {saved && <Check size={9} className="ml-auto flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
     </div>
   );
 }
 
-function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
-  note: Note; originalIndex: number; query: string; editorOpen: boolean; editorExpanded: boolean;
+function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded, initialContent }: {
+  note: Note; originalIndex: number; query: string; editorOpen: boolean; editorExpanded: boolean; initialContent: string | null;
 }) {
-  const { text, handleChange, saved, preview, setPreview, taRef, applyFormat, handleKeyDown } = useNotesEditor(note.slug);
+  const { saved, divRef, applyFormat, handleKeyDown, handleInput, handleCompositionStart, handleCompositionEnd, handlePaste } = useNotesEditor(note.slug, initialContent);
   const cardFlex = !editorOpen ? "1 1 100%" : editorExpanded ? "0 0 0px" : "1 1 50%";
   const editorFlex = editorExpanded ? "1 1 100%" : "1 1 50%";
 
@@ -284,7 +432,7 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
               <p className="text-xs font-semibold truncate min-w-0 flex-1" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
                 {note.title}
               </p>
-              {saved && !preview && <Check size={9} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
+              {saved && <Check size={9} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
             </div>
           ) : (
             <div
@@ -295,7 +443,7 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
               <span className="text-xs font-semibold truncate min-w-0 flex-1" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
                 {note.title}
               </span>
-              {saved && !preview && <Check size={9} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
+              {saved && <Check size={9} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
             </div>
           )}
           {/* Toolbar row — directly below title bar */}
@@ -303,25 +451,28 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
             className="flex items-center gap-0.5 px-2 py-1 border-b flex-shrink-0"
             style={{ borderColor: "var(--border)", background: "var(--bg-surface)" }}
           >
-            <EditorToolbar applyFormat={applyFormat} saved={saved} preview={preview} onTogglePreview={() => setPreview(v => !v)} />
+            <EditorToolbar applyFormat={applyFormat} saved={saved} />
           </div>
-          <div className="flex-1 p-3 overflow-auto">
-            {preview ? (
-              text.trim()
-                ? <MarkdownContent content={text} highlight="" />
-                : <p className="text-sm" style={{ color: "var(--text-muted)" }}>Nothing to preview yet.</p>
-            ) : (
-              <textarea
-                ref={taRef}
-                value={text}
-                onChange={e => handleChange(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Write your notes here… (supports markdown)"
-                className="w-full h-full bg-transparent text-sm outline-none resize-none"
-                style={{ color: "var(--text-primary)", fontFamily: "Inter, sans-serif", lineHeight: 1.7, minHeight: 120 }}
-              />
-            )}
-          </div>
+          <div
+            ref={divRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={handleInput}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            data-placeholder="Write your notes here… (supports markdown)"
+            className="flex-1 p-3 overflow-auto text-sm outline-none"
+            style={{
+              color: "var(--text-primary)",
+              fontFamily: "Inter, sans-serif",
+              lineHeight: 1.7,
+              minHeight: 120,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            }}
+          />
         </div>
       )}
 
@@ -345,6 +496,23 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
   const rightRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const listScrollRef = useRef<HTMLDivElement>(null);
+
+  // Batch-fetch all personal notes for this category in one request
+  const { user } = useAuth();
+  const [notesContent, setNotesContent] = useState<Record<string, string> | null>(null);
+  useEffect(() => {
+    if (!user) { setNotesContent(null); return; }
+    getSupabase()
+      .from("personal_notes")
+      .select("note_slug, content")
+      .eq("user_id", user.id)
+      .in("note_slug", notes.map(n => n.slug))
+      .then(({ data }) => {
+        const map: Record<string, string> = {};
+        for (const row of (data ?? [])) map[row.note_slug] = row.content;
+        setNotesContent(map);
+      });
+  }, [user?.id, catSlug]);
 
   const filtered = query.trim()
     ? notes.filter(n => {
@@ -559,6 +727,7 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
                   query={query}
                   editorOpen={editorOpen}
                   editorExpanded={editorExpanded}
+                  initialContent={user ? (notesContent ? (notesContent[note.slug] ?? "") : null) : ""}
                 />
               );
             })
