@@ -102,8 +102,8 @@ function useNotesEditor(noteSlug: string) {
       case 'bullet': {
         const chunk = v.slice(lineStart, e);
         const lines = chunk.split('\n');
-        const allBullet = lines.every(l => l.startsWith('- '));
-        const replaced = lines.map(l => allBullet ? l.slice(2) : (l.startsWith('- ') ? l : `- ${l}`)).join('\n');
+        const allBullet = lines.every(l => l.startsWith('• '));
+        const replaced = lines.map(l => allBullet ? l.slice(2) : (l.startsWith('• ') ? l : `• ${l}`)).join('\n');
         nv = v.slice(0, lineStart) + replaced + v.slice(e);
         ne = lineStart + replaced.length;
         ns = Math.max(lineStart, s + (allBullet ? -2 : 2));
@@ -135,7 +135,31 @@ function useNotesEditor(noteSlug: string) {
     requestAnimationFrame(() => { el.focus(); el.setSelectionRange(ns, ne); });
   }
 
-  return { text, handleChange, saved, taRef, applyFormat };
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    const el = taRef.current;
+    if (!el || e.key !== 'Enter') return;
+    const { selectionStart: s, value: v } = el;
+    const lineStart = v.lastIndexOf('\n', s - 1) + 1;
+    const lineText = v.slice(lineStart, s);
+    const match = lineText.match(/^(• )/);
+    if (!match) return;
+    e.preventDefault();
+    if (lineText.trim() === '•') {
+      // Empty bullet — exit bullet mode
+      const nv = v.slice(0, lineStart) + '\n' + v.slice(s);
+      handleChange(nv);
+      requestAnimationFrame(() => { el.focus(); el.setSelectionRange(lineStart + 1, lineStart + 1); });
+    } else {
+      // Continue bullet
+      const insert = '\n• ';
+      const nv = v.slice(0, s) + insert + v.slice(s);
+      const np = s + insert.length;
+      handleChange(nv);
+      requestAnimationFrame(() => { el.focus(); el.setSelectionRange(np, np); });
+    }
+  }
+
+  return { text, handleChange, saved, taRef, applyFormat, handleKeyDown };
 }
 
 function EditorToolbar({ applyFormat, saved }: { applyFormat: (t: string) => void; saved: boolean }) {
@@ -161,7 +185,7 @@ function EditorToolbar({ applyFormat, saved }: { applyFormat: (t: string) => voi
 function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
   note: Note; originalIndex: number; query: string; editorOpen: boolean; editorExpanded: boolean;
 }) {
-  const { text, handleChange, saved, taRef, applyFormat } = useNotesEditor(note.slug);
+  const { text, handleChange, saved, taRef, applyFormat, handleKeyDown } = useNotesEditor(note.slug);
   const cardFlex = !editorOpen ? "1 1 100%" : editorExpanded ? "0 0 0px" : "1 1 50%";
   const editorFlex = editorExpanded ? "1 1 100%" : "1 1 50%";
 
@@ -258,6 +282,7 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
               ref={taRef}
               value={text}
               onChange={e => handleChange(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="Write your notes here… (supports markdown)"
               className="w-full h-full bg-transparent text-sm outline-none resize-none"
               style={{ color: "var(--text-primary)", fontFamily: "Inter, sans-serif", lineHeight: 1.7, minHeight: 120 }}
