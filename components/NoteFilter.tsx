@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen, Maximize2, Minimize2, Bold, Italic, Heading1, Heading2, Heading3, Pilcrow, List, Code, FileCode, Quote } from "lucide-react";
+import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen, Maximize2, Minimize2, Bold, Italic, Heading1, Heading2, Heading3, Pilcrow, List, Code, FileCode, Quote, Eye, EyeOff } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
 import CommentBox from "./CommentBox";
 import type { Note } from "../data/types";
@@ -47,6 +47,7 @@ function useNotesEditor(noteSlug: string) {
   const storageKey = `sn-personal-notes-${noteSlug}`;
   const [text, setText] = useState("");
   const [saved, setSaved] = useState(false);
+  const [preview, setPreview] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
 
@@ -162,27 +163,49 @@ function useNotesEditor(noteSlug: string) {
     }
   }
 
-  return { text, handleChange, saved, taRef, applyFormat, handleKeyDown };
+  return { text, handleChange, saved, preview, setPreview, taRef, applyFormat, handleKeyDown };
 }
 
-function EditorToolbar({ applyFormat, saved }: { applyFormat: (t: string) => void; saved: boolean }) {
+function EditorToolbar({ applyFormat, saved, preview, onTogglePreview }: {
+  applyFormat: (t: string) => void; saved: boolean; preview: boolean; onTogglePreview: () => void;
+}) {
   return (
-    <div className="flex items-center gap-0.5 flex-shrink-0">
-      <TBtn onClick={() => applyFormat('bold')} title="Bold"><Bold size={11} /></TBtn>
-      <TBtn onClick={() => applyFormat('italic')} title="Italic"><Italic size={11} /></TBtn>
-      <TDivider />
-      <TBtn onClick={() => applyFormat('paragraph')} title="Paragraph"><Pilcrow size={11} /></TBtn>
-      <TBtn onClick={() => applyFormat('h1')} title="Heading 1"><Heading1 size={11} /></TBtn>
-      <TBtn onClick={() => applyFormat('h2')} title="Heading 2"><Heading2 size={11} /></TBtn>
-      <TBtn onClick={() => applyFormat('h3')} title="Heading 3"><Heading3 size={11} /></TBtn>
-      <TDivider />
-      <TBtn onClick={() => applyFormat('bullet')} title="Bullet list"><List size={11} /></TBtn>
-      <TDivider />
-      <TBtn onClick={() => applyFormat('code')} title="Inline code"><Code size={11} /></TBtn>
-      <TBtn onClick={() => applyFormat('codeblock')} title="Code block"><FileCode size={11} /></TBtn>
-      <TDivider />
-      <TBtn onClick={() => applyFormat('quote')} title="Blockquote"><Quote size={11} /></TBtn>
-      {saved && <Check size={9} className="ml-1 flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
+    <div className="flex items-center gap-0.5 w-full">
+      {/* Format buttons — hidden in preview mode */}
+      <div className="flex items-center gap-0.5 flex-1" style={{ opacity: preview ? 0.3 : 1, pointerEvents: preview ? "none" : "auto" }}>
+        <TBtn onClick={() => applyFormat('bold')} title="Bold"><Bold size={11} /></TBtn>
+        <TBtn onClick={() => applyFormat('italic')} title="Italic"><Italic size={11} /></TBtn>
+        <TDivider />
+        <TBtn onClick={() => applyFormat('paragraph')} title="Paragraph"><Pilcrow size={11} /></TBtn>
+        <TBtn onClick={() => applyFormat('h1')} title="Heading 1"><Heading1 size={11} /></TBtn>
+        <TBtn onClick={() => applyFormat('h2')} title="Heading 2"><Heading2 size={11} /></TBtn>
+        <TBtn onClick={() => applyFormat('h3')} title="Heading 3"><Heading3 size={11} /></TBtn>
+        <TDivider />
+        <TBtn onClick={() => applyFormat('bullet')} title="Bullet list"><List size={11} /></TBtn>
+        <TDivider />
+        <TBtn onClick={() => applyFormat('code')} title="Inline code"><Code size={11} /></TBtn>
+        <TBtn onClick={() => applyFormat('codeblock')} title="Code block"><FileCode size={11} /></TBtn>
+        <TDivider />
+        <TBtn onClick={() => applyFormat('quote')} title="Blockquote"><Quote size={11} /></TBtn>
+      </div>
+      <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+        {saved && !preview && <Check size={9} style={{ color: "var(--text-muted)" }} />}
+        {/* Preview toggle */}
+        <button
+          type="button"
+          onClick={onTogglePreview}
+          title={preview ? "Switch to markdown editor" : "Preview rendered output"}
+          className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs transition-colors flex-shrink-0"
+          style={{
+            background: preview ? "color-mix(in srgb, var(--accent-1) 12%, transparent)" : "transparent",
+            color: preview ? "var(--accent-1)" : "var(--text-secondary)",
+            border: `1px solid ${preview ? "var(--accent-1)" : "transparent"}`,
+          }}
+        >
+          {preview ? <EyeOff size={11} /> : <Eye size={11} />}
+          {preview ? "Markdown" : "Preview"}
+        </button>
+      </div>
     </div>
   );
 }
@@ -190,7 +213,7 @@ function EditorToolbar({ applyFormat, saved }: { applyFormat: (t: string) => voi
 function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
   note: Note; originalIndex: number; query: string; editorOpen: boolean; editorExpanded: boolean;
 }) {
-  const { text, handleChange, saved, taRef, applyFormat, handleKeyDown } = useNotesEditor(note.slug);
+  const { text, handleChange, saved, preview, setPreview, taRef, applyFormat, handleKeyDown } = useNotesEditor(note.slug);
   const cardFlex = !editorOpen ? "1 1 100%" : editorExpanded ? "0 0 0px" : "1 1 50%";
   const editorFlex = editorExpanded ? "1 1 100%" : "1 1 50%";
 
@@ -261,7 +284,7 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
               <p className="text-xs font-semibold truncate min-w-0 flex-1" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
                 {note.title}
               </p>
-              {saved && <Check size={9} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
+              {saved && !preview && <Check size={9} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
             </div>
           ) : (
             <div
@@ -272,7 +295,7 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
               <span className="text-xs font-semibold truncate min-w-0 flex-1" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
                 {note.title}
               </span>
-              {saved && <Check size={9} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
+              {saved && !preview && <Check size={9} className="flex-shrink-0" style={{ color: "var(--text-muted)" }} />}
             </div>
           )}
           {/* Toolbar row — directly below title bar */}
@@ -280,18 +303,24 @@ function NoteRow({ note, originalIndex, query, editorOpen, editorExpanded }: {
             className="flex items-center gap-0.5 px-2 py-1 border-b flex-shrink-0"
             style={{ borderColor: "var(--border)", background: "var(--bg-surface)" }}
           >
-            <EditorToolbar applyFormat={applyFormat} saved={false} />
+            <EditorToolbar applyFormat={applyFormat} saved={saved} preview={preview} onTogglePreview={() => setPreview(v => !v)} />
           </div>
-          <div className="flex-1 p-3 overflow-hidden">
-            <textarea
-              ref={taRef}
-              value={text}
-              onChange={e => handleChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Write your notes here… (supports markdown)"
-              className="w-full h-full bg-transparent text-sm outline-none resize-none"
-              style={{ color: "var(--text-primary)", fontFamily: "Inter, sans-serif", lineHeight: 1.7, minHeight: 120 }}
-            />
+          <div className="flex-1 p-3 overflow-auto">
+            {preview ? (
+              text.trim()
+                ? <MarkdownContent content={text} highlight="" />
+                : <p className="text-sm" style={{ color: "var(--text-muted)" }}>Nothing to preview yet.</p>
+            ) : (
+              <textarea
+                ref={taRef}
+                value={text}
+                onChange={e => handleChange(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Write your notes here… (supports markdown)"
+                className="w-full h-full bg-transparent text-sm outline-none resize-none"
+                style={{ color: "var(--text-primary)", fontFamily: "Inter, sans-serif", lineHeight: 1.7, minHeight: 120 }}
+              />
+            )}
           </div>
         </div>
       )}
