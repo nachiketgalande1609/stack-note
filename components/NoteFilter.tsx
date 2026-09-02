@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen, ChevronRight, ChevronLeft } from "lucide-react";
+import { Search, X, PenLine, Check, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import MarkdownContent from "./MarkdownContent";
 import CommentBox from "./CommentBox";
 import type { Note } from "../data/types";
@@ -69,8 +69,7 @@ function PersonalNotesEditor({ noteSlug }: { noteSlug: string }) {
   );
 }
 
-function NoteRow({ note, originalIndex, query }: { note: Note; originalIndex: number; query: string }) {
-  const [editorOpen, setEditorOpen] = useState(true);
+function NoteRow({ note, originalIndex, query, editorOpen }: { note: Note; originalIndex: number; query: string; editorOpen: boolean }) {
 
   return (
     <div id={note.slug} className="flex gap-4 items-start" style={{ scrollMarginTop: "24px" }}>
@@ -110,7 +109,7 @@ function NoteRow({ note, originalIndex, query }: { note: Note; originalIndex: nu
       </div>
 
       {/* Per-card notes editor — 50% width, collapsible */}
-      {editorOpen ? (
+      {editorOpen && (
         <div
           className="hidden lg:flex flex-col rounded-2xl border transition-all duration-200"
           style={{
@@ -122,53 +121,24 @@ function NoteRow({ note, originalIndex, query }: { note: Note; originalIndex: nu
         >
           {/* Editor header */}
           <div
-            className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0"
+            className="flex items-center gap-1.5 px-4 py-3 border-b flex-shrink-0"
             style={{ borderColor: "var(--border)" }}
           >
-            <div className="flex items-center gap-1.5">
-              <PenLine size={12} style={{ color: "var(--accent-1)" }} />
-              <span className="text-xs font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
-                My Notes
-              </span>
-            </div>
-            <button
-              onClick={() => setEditorOpen(false)}
-              className="flex items-center gap-1 text-xs px-2 py-1 rounded-md transition-colors"
-              style={{ color: "var(--text-muted)" }}
-              onMouseEnter={e => (e.currentTarget.style.background = "var(--bg-surface-2)")}
-              onMouseLeave={e => (e.currentTarget.style.background = "transparent")}
-              title="Collapse editor"
-            >
-              <ChevronRight size={13} />
-            </button>
+            <PenLine size={12} style={{ color: "var(--accent-1)" }} />
+            <span className="text-xs font-semibold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)" }}>
+              My Notes
+            </span>
           </div>
           <div className="flex-1 p-3">
             <PersonalNotesEditor noteSlug={note.slug} />
           </div>
         </div>
-      ) : (
-        /* Collapsed: just a slim button to re-open */
-        <button
-          onClick={() => setEditorOpen(true)}
-          className="hidden lg:flex flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-4 flex-shrink-0 transition-colors"
-          style={{
-            width: 40,
-            background: "var(--bg-surface)",
-            borderColor: "var(--border)",
-            color: "var(--text-muted)",
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--accent-1)"; (e.currentTarget as HTMLElement).style.color = "var(--accent-1)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLElement).style.color = "var(--text-muted)"; }}
-          title="Open notes editor"
-        >
-          <PenLine size={13} />
-          <ChevronLeft size={13} />
-        </button>
       )}
 
     </div>
   );
 }
+
 
 interface NoteFilterProps {
   notes: Note[];
@@ -180,6 +150,7 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
   const [query, setQuery] = useState("");
   const [activeSlug, setActiveSlug] = useState(notes[0]?.slug ?? "");
   const [listVisible, setListVisible] = useState(true);
+  const [editorOpen, setEditorOpen] = useState(true);
   const rightRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const listScrollRef = useRef<HTMLDivElement>(null);
@@ -345,11 +316,25 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
               {listVisible ? <PanelLeftClose size={13} /> : <PanelLeftOpen size={13} />}
             </button>
             <h1
-              className="text-3xl font-bold"
+              className="text-3xl font-bold flex-1"
               style={{ fontFamily: "'Space Grotesk', sans-serif", color: "var(--text-primary)", letterSpacing: "-0.02em" }}
             >
               {catLabel}
             </h1>
+            {/* Global notes toggle */}
+            <button
+              onClick={() => setEditorOpen(v => !v)}
+              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all flex-shrink-0"
+              style={{
+                background: editorOpen ? "color-mix(in srgb, var(--accent-1) 10%, var(--bg-surface))" : "var(--bg-surface)",
+                borderColor: editorOpen ? "var(--accent-1)" : "var(--border)",
+                color: editorOpen ? "var(--accent-1)" : "var(--text-muted)",
+              }}
+              title={editorOpen ? "Hide notes editor" : "Show notes editor"}
+            >
+              <PenLine size={12} />
+              {editorOpen ? "Hide Notes" : "Show Notes"}
+            </button>
           </div>
 
           {filtered.length === 0 ? (
@@ -365,6 +350,7 @@ export default function NoteFilter({ notes, catSlug, catLabel }: NoteFilterProps
                   note={note}
                   originalIndex={originalIndex}
                   query={query}
+                  editorOpen={editorOpen}
                 />
               );
             })
